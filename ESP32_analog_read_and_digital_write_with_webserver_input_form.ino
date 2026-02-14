@@ -5,6 +5,7 @@
 
 const int BattPin12V = 36;
 const int BattPin24V = 39;
+
 const int Relais1Pin = 13;
 const int Relais2Pin = 12;
 const int Relais3Pin = 14;
@@ -286,6 +287,7 @@ void loop() {
   }
   else if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == HIGH)) {
     Serial.println("Spannung hoch genug, schalte Strom an.");
+    digitalWrite(Relais1Pin, LOW);
   }
   else {
     Serial.println("Das darf nicht passieren !!!");
