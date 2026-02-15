@@ -113,9 +113,6 @@ const char index_html[] PROGMEM = R"rawliteral(
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Vaus()">
   </form><br>
-  <h2 style="font-size:20px;">Temperatur:</h2>
-   <output id="temperatur" for="temperatur"></output>
-  <script>document.write(temperatur)</script>
   <br>
   </center>
   <iframe style="display:none" name="hidden-form"></iframe>
@@ -280,6 +277,10 @@ void loop() {
   Serial.print("\nanaloger Wert 12 Volt:");
   Serial.print(WertPin12V);
   Spannung12V = WertPin12V/umrechnungsfaktor12V;
+  if (Spannung12V < 3) {
+    Serial.println("\nDas 12 Volt-System ist nicht angeschlossen oder die Batterie ist tot\n");
+  }
+  else {
   Serial.print("\nSpannung 12 Volt:");
   Serial.println(Spannung12V);
   if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == LOW)){
@@ -312,10 +313,15 @@ void loop() {
   else {
     Serial.println("Das darf nicht passieren !!!");
   }
+  }
   WertPin24V = analogRead(BattPin24V);
   Serial.print("analoger Wert 24 Volt:");
   Serial.print(WertPin24V);
   Spannung24V = WertPin24V/umrechnungsfaktor24V;
+  if (Spannung24V < 3) {
+    Serial.println("\nDas 24 Volt-System ist nicht angeschlossen oder die Batterie ist tot");
+  }
+  else{
   Serial.print("\nSpannung 24 Volt:");
   Serial.println(Spannung24V);
     if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == LOW)){
@@ -347,6 +353,7 @@ void loop() {
   }
   else {
     Serial.println("Das darf nicht passieren !!!");
+  }
   }
   delay(20000);
 }
