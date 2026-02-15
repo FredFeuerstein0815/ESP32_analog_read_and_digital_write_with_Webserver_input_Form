@@ -1,11 +1,15 @@
+#include <Adafruit_BME280.h>
+#include <Adafruit_Sensor.h>
 #include <Arduino.h>
-#include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#include <Wire.h>
+
+Adafruit_BME280 bme;
 
 const int BattPin12V = 36;
 const int BattPin24V = 39;
-
 const int Relais1Pin = 13;
 const int Relais2Pin = 12;
 const int Relais3Pin = 14;
@@ -33,8 +37,8 @@ IPAddress secondaryDNS(8, 8, 4, 4);
 
 AsyncWebServer server(80);
 
-const char* ssid = "SSID";
-const char* password = "Geheim";
+const char* ssid = "Manu_Mitte";
+const char* password = "SchuppenSchuppen1";
 
 // Parameter-Namen
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
@@ -201,7 +205,7 @@ void setup() {
   digitalWrite(Relais2Pin, HIGH);
   digitalWrite(Relais3Pin, HIGH);
   digitalWrite(Relais4Pin, HIGH);
-  Serial.println("Alles Relais ausgeschaltet");
+  Serial.println("Alle Relais ausgeschaltet");
 }
 
 void loop() {
@@ -213,12 +217,11 @@ void loop() {
   Serial.println(Vorgabe24Van);
   Serial.print("Ausschaltspannung 24 Volt: ");
   Serial.println(Vorgabe24Vaus);
-  Serial.println("\n");
   StatusRelais1 = digitalRead(Relais1Pin);
   StatusRelais2 = digitalRead(Relais2Pin);
   StatusRelais3 = digitalRead(Relais3Pin);
   StatusRelais4 = digitalRead(Relais4Pin);
-  Serial.println("Status Relais1:");
+  Serial.println("\nStatus Relais1:");
   Serial.println(StatusRelais1);
   Serial.println("Status Relais2:");
   Serial.println(StatusRelais2);
@@ -226,9 +229,8 @@ void loop() {
   Serial.println(StatusRelais3);
   Serial.println("Status Relais4:");
   Serial.println(StatusRelais4);
-  Serial.println("\n");
   WertPin12V = analogRead(BattPin12V);
-  Serial.println("analoger Wert 12 Volt:");
+  Serial.println("\nanaloger Wert 12 Volt:");
   Serial.println(WertPin12V);
   Spannung12V = WertPin12V/umrechnungsfaktor12V;
   Serial.print("\nSpannung 12 Volt:");
@@ -292,6 +294,28 @@ void loop() {
   else {
     Serial.println("Das darf nicht passieren !!!");
   }
-  Serial.println("\n");
+
+  bool status = bme.begin(0x76);  
+  float temperatur = bme.readTemperature();
+  float luftdruck = bme.readPressure() / 100.0F; // hPa
+  float luftfeuchtigkeit = bme.readHumidity();
+
+  // Werte in Strings umwandeln
+  char tempchar[8], druckchar[8], feuchtchar[8];
+  dtostrf(temperatur, 1, 2, tempchar);
+  dtostrf(luftdruck, 1, 2, druckchar);
+  dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
+  Serial.print("\rTemperatur : ");
+  Serial.print(tempchar);
+  Serial.print(" °C\r\n");
+  Serial.print("Luftdruck : ");
+  Serial.print(druckchar);
+  Serial.print(" hPa\r\n");
+  Serial.print("Luftfeuchtigkeit : ");
+  Serial.print(feuchtchar);
+  Serial.print(" %\r\n");
+  String tempString = String(tempchar);
+  String druckString = String(druckchar);
+  String feuchtString = String(feuchtchar);
   delay(20000);
 }
