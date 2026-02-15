@@ -214,7 +214,7 @@ void setup() {
   } else {
     Serial.println("\nFailed to connect");
   }
-
+  bme.begin(0x76);
   // Webserver starten
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     String htmlResponse = index_html;
@@ -276,10 +276,9 @@ void setup() {
 }
 
 void loop() {
-  bool status = bme.begin(0x76);  
-  float temperatur = bme.readTemperature();
-  float luftdruck = bme.readPressure() / 100.0F; // hPa
-  float luftfeuchtigkeit = bme.readHumidity();
+  temperatur = bme.readTemperature();
+  luftdruck = bme.readPressure() / 100.0F; // hPa
+  luftfeuchtigkeit = bme.readHumidity();
   // Werte in Strings umwandeln
   char tempchar[8], druckchar[8], feuchtchar[8];
   dtostrf(temperatur, 1, 2, tempchar);
