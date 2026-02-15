@@ -44,15 +44,18 @@ const char* PARAM_FLOAT12Van = "Vorgabe12Van";
 const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
 const char* PARAM_FLOAT24Van = "Vorgabe24Van";
 const char* PARAM_FLOAT24Vaus = "Vorgabe24Vaus";
+const char* PARAM_Temperatur = "temperatur";
+const char* PARAM_Luftdruck = "luftdruck";
+const char* PARAM_Luftfeuchtigkeit = "luftfeuchtigkeit";
 
 // Globale Platzhalter
 float Vorgabe12Van = 14.0;
-float Vorgabe12Vaus = 13.0;
+float Vorgabe12Vaus = 13.2;
 float Vorgabe24Van = 28.0;
 float Vorgabe24Vaus = 26.4;
-float temperatur = 0.0;
-float luftdruck = 0.0;
-float luftfeuchtigkeit = 0.0;
+float temperatur = 10.0;
+float luftdruck = 1000.0;
+float luftfeuchtigkeit = 50.0;
 
 // Funktion, um die HTML-Seite zu generieren, z.B. mit Platzhaltern
 const char index_html[] PROGMEM = R"rawliteral(
@@ -61,6 +64,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   <meta http-equiv="cache-control" content="no-cache" />
   <meta http-equiv="pragma" content="no-cache" />
   <meta http-equiv="expires" content="-1" />
+  <meta http-equiv="refresh" content="60" />
   <title>Ein- Ausschaltspannung</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script>
@@ -89,36 +93,72 @@ const char index_html[] PROGMEM = R"rawliteral(
   <h2 style="font-size:20px">Einschaltspannung 12 Volt:</h2>
   <br>
   <input style="font-size:20px; width:60px;" value="%Vorgabe12Van%" size="8" type="number" step="0.1" name="Vorgabe12Van" min="12" max="15">
+  </input>
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Van()">
+  </input>
   </form><br>
   <form action="/get" target="hidden-form">
   <h2 style="font-size:20px;">Ausschaltspannung 12 Volt:</h2>
   <br>
   <input style="font-size:20px; width: 60px;" value="%Vorgabe12Vaus%" size="8" type="number" step="0.1" name="Vorgabe12Vaus" min="12" max="15">
+  </input>
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Vaus()">
+  </input>
   </form><br>
   <form action="/get" target="hidden-form">
   <h2 style="font-size:20px;">Einschaltspannung 24 Volt:</h2>
   <br>
-  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Van%" size=8 type="number" step="0.1" name="Vorgabe24Van" min="24" max="30">
+  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Van%" size="8" type="number" step="0.1" name="Vorgabe24Van" min="24" max="30">
+  </input>
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Van()">
+  </input>
   </form><br>
   <form action="/get" target="hidden-form">
   <h2 style="font-size:20px;">Ausschaltspannung 24 Volt:</h2>
   <br>
-  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Vaus%" size=8 type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30">
+  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Vaus%" size="8" type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30">
+  </input>
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Vaus()">
+  </input>
   </form><br>
+  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
+  <tr>
+  <td style="font-size:20px;">Temperatur</td>
+  <td style="font-size:20px;">
+  <script>document.write(%temperatur%);
+  </script>
+  </td>
+  <td style="font-size:20px;">°C</td>
+  </tr>
+  </tabel>
+  <br>
+  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
+  <tr>
+  <td style="font-size:20px;">Luftdruck</td>
+  <script>document.write(%luftdruck%);
+  </script>
+  </td>
+  <td style="font-size:20px;">hPa</td>
+  </tr>
+  </tabel>
+  <br>
+  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
+  <tr>
+  <td style="font-size:20px;">Luftfeuchtigkeit</td>
+  <script>document.write(%luftfeuchtigkeit%);
+  </script>
+  </td>
+  <td style="font-size:20px;">%</td>
+  </tr>
+  </tabel>
   <br>
   </center>
   <iframe style="display:none" name="hidden-form"></iframe>
 </body></html>)rawliteral";
-
-// Keine Datei-Operationen mehr notwendig, da Variablen im RAM
 
 // Funktion, um die HTML-Seite zu generieren und Platzhalter zu ersetzen
 String processor(const String& var){
@@ -133,6 +173,15 @@ String processor(const String& var){
   }
   else if(var == "Vorgabe24Vaus"){
     return String(Vorgabe24Vaus);
+  }
+    else if(var == "temperatur"){
+    return String(temperatur);
+  }
+    else if(var == "luftdruck"){
+    return String(luftdruck);
+  }
+    else if(var == "luftfeuchtigkeit"){
+    return String(luftfeuchtigkeit);
   }
   return String();
 }
@@ -174,6 +223,9 @@ void setup() {
     htmlResponse.replace("%Vorgabe12Vaus%", String(Vorgabe12Vaus));
     htmlResponse.replace("%Vorgabe24Van%", String(Vorgabe24Van));
     htmlResponse.replace("%Vorgabe24Vaus%", String(Vorgabe24Vaus));
+    htmlResponse.replace("%temperatur%", String(temperatur));
+    htmlResponse.replace("%luftdruck%", String(luftdruck));
+    htmlResponse.replace("%luftfeuchtigkeit%", String(luftfeuchtigkeit));
     request->send(200, "text/html", htmlResponse);
   });
 
@@ -193,6 +245,18 @@ void setup() {
     if(request->hasParam(PARAM_FLOAT24Vaus)) {
       String value = request->getParam(PARAM_FLOAT24Vaus)->value();
       Vorgabe24Vaus = value.toFloat();
+    }
+    if(request->hasParam(PARAM_Temperatur)) {
+      String value = request->getParam(PARAM_Temperatur)->value();
+      temperatur = value.toFloat();
+    }
+    if(request->hasParam(PARAM_Luftdruck)) {
+      String value = request->getParam(PARAM_Luftdruck)->value();
+      luftdruck = value.toFloat();
+    }
+    if(request->hasParam(PARAM_Luftfeuchtigkeit)) {
+      String value = request->getParam(PARAM_Luftfeuchtigkeit)->value();
+      luftfeuchtigkeit = value.toFloat();
     }
     request->send(200, "text/plain", "OK");
   });
