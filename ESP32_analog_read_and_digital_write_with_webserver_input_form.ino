@@ -25,8 +25,6 @@ int StatusRelais4 = 0;
 
 int WertPin12V = 0;
 int WertPin24V = 0;
-float Spannung12V = 0;
-float Spannung24V = 0;
 
 IPAddress local_IP(192, 168, 0, 99);
 IPAddress gateway(192, 168, 0, 1);
@@ -47,15 +45,19 @@ const char* PARAM_FLOAT24Vaus = "Vorgabe24Vaus";
 const char* PARAM_Temperatur = "temperatur";
 const char* PARAM_Luftdruck = "luftdruck";
 const char* PARAM_Luftfeuchtigkeit = "luftfeuchtigkeit";
+const char* PARAM_Spannung12V = "Spannung12V";
+const char* PARAM_Spannung24V = "Spannung24V";
 
 // Globale Platzhalter
 float Vorgabe12Van = 14.0;
 float Vorgabe12Vaus = 13.2;
 float Vorgabe24Van = 28.0;
 float Vorgabe24Vaus = 26.4;
-float temperatur = 10.0;
-float luftdruck = 1000.0;
+float temperatur = 19.9;
+float luftdruck = 999.9;
 float luftfeuchtigkeit = 50.0;
+float Spannung12V = 9.99;
+float Spannung24V = 19.99;
 
 // Funktion, um die HTML-Seite zu generieren, z.B. mit Platzhaltern
 const char index_html[] PROGMEM = R"rawliteral(
@@ -89,42 +91,81 @@ const char index_html[] PROGMEM = R"rawliteral(
   <body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
   <center>
   <form action="/get" target="hidden-form">
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Spannung 12 Volt ist:</td>
+  <script>document.write(%Spannung12V%);
+  </script>
+  </tr>
+  </table>
   <br>
-  <h2 style="font-size:20px">Einschaltspannung 12 Volt:</h2>
-  <br>
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Einschaltspannung 12 Volt ist:</td>
+  <script>document.write(%Vorgabe12Van%);
+  </script>
+  </tr>
+  </table>
+  <h2 style="font-size:20px">Einschaltspannung 12 Volt soll:</h2>
   <input style="font-size:20px; width:60px;" value="%Vorgabe12Van%" size="8" type="number" step="0.1" name="Vorgabe12Van" min="12" max="15">
   </input>
-  <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Van()">
   </input>
-  </form><br>
+  </form>
+  <br><br><br>
   <form action="/get" target="hidden-form">
-  <h2 style="font-size:20px;">Ausschaltspannung 12 Volt:</h2>
-  <br>
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Ausschaltspannung 12 Volt ist:</td>
+  <script>document.write(%Vorgabe12Vaus%);
+  </script>
+  </tr>
+  </table>
+  <h2 style="font-size:20px;">Ausschaltspannung 12 Volt soll:</h2>
   <input style="font-size:20px; width: 60px;" value="%Vorgabe12Vaus%" size="8" type="number" step="0.1" name="Vorgabe12Vaus" min="12" max="15">
   </input>
-  <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Vaus()">
   </input>
-  </form><br>
+  </form>
+  <br><br><br>
   <form action="/get" target="hidden-form">
-  <h2 style="font-size:20px;">Einschaltspannung 24 Volt:</h2>
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Spannung 24 Volt ist:</td>
+  <script>document.write(%Spannung24V%);
+  </script>
+  </tr>
+  </table>
   <br>
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Einschaltspannung 24 Volt ist:</td>
+  <script>document.write(%Vorgabe24Van%);
+  </script>
+  </tr>
+  </table>
+  <h2 style="font-size:20px;">Einschaltspannung 24 Volt soll:</h2>
   <input style="font-size:20px; width: 60px;" value="%Vorgabe24Van%" size="8" type="number" step="0.1" name="Vorgabe24Van" min="24" max="30">
   </input>
-  <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Van()">
   </input>
-  </form><br>
+  </form>
+  <br><br><br>
   <form action="/get" target="hidden-form">
-  <h2 style="font-size:20px;">Ausschaltspannung 24 Volt:</h2>
-  <br>
+  <tabel style="font-size:20px; border:1px solid grey;">
+  <tr>
+  <td style="font-size:20px;">Ausschaltspannung 24 Volt ist:</td>
+  <script>document.write(%Vorgabe24Vaus%);
+  </script>
+  </tr>
+  </table>
+  <h2 style="font-size:20px;">Ausschaltspannung 24 Volt soll:</h2>
   <input style="font-size:20px; width: 60px;" value="%Vorgabe24Vaus%" size="8" type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30">
   </input>
-  <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Vaus()">
   </input>
-  </form><br>
+  </form>
+  <br><br><br>
   <tabel style="font-size:20px; border:1px solid grey;" colums="3">
   <tr>
   <td style="font-size:20px;">Temperatur</td>
@@ -183,6 +224,12 @@ String processor(const String& var){
     else if(var == "luftfeuchtigkeit"){
     return String(luftfeuchtigkeit);
   }
+    else if(var == "Spannung12V"){
+    return String(Spannung12V);
+  }
+    else if(var == "Spannung24V"){
+    return String(Spannung24V);
+  }
   return String();
 }
 
@@ -226,6 +273,8 @@ void setup() {
     htmlResponse.replace("%temperatur%", String(temperatur));
     htmlResponse.replace("%luftdruck%", String(luftdruck));
     htmlResponse.replace("%luftfeuchtigkeit%", String(luftfeuchtigkeit));
+    htmlResponse.replace("%Spannung12V%", String(Spannung12V));
+    htmlResponse.replace("%Spannung24V%", String(Spannung24V));
     request->send(200, "text/html", htmlResponse);
   });
 
@@ -257,6 +306,14 @@ void setup() {
     if(request->hasParam(PARAM_Luftfeuchtigkeit)) {
       String value = request->getParam(PARAM_Luftfeuchtigkeit)->value();
       luftfeuchtigkeit = value.toFloat();
+    }
+      if(request->hasParam(PARAM_Spannung12V)) {
+      String value = request->getParam(PARAM_Spannung12V)->value();
+      Spannung12V = value.toFloat();
+    }
+      if(request->hasParam(PARAM_Spannung24V)) {
+      String value = request->getParam(PARAM_Spannung24V)->value();
+      Spannung24V = value.toFloat();
     }
     request->send(200, "text/plain", "OK");
   });
