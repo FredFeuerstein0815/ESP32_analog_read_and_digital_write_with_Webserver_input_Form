@@ -28,7 +28,6 @@ int WertPin24V = 0;
 float Spannung12V = 0;
 float Spannung24V = 0;
 
-// WLAN-Konfiguration
 IPAddress local_IP(192, 168, 0, 99);
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -37,8 +36,8 @@ IPAddress secondaryDNS(8, 8, 4, 4);
 
 AsyncWebServer server(80);
 
-const char* ssid = "Manu_Mitte";
-const char* password = "SchuppenSchuppen1";
+const char* ssid = "SSID";
+const char* password = "Geheim";
 
 // Parameter-Namen
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
@@ -46,11 +45,14 @@ const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
 const char* PARAM_FLOAT24Van = "Vorgabe24Van";
 const char* PARAM_FLOAT24Vaus = "Vorgabe24Vaus";
 
-// Globale Variablen, um die Werte im RAM zu speichern
+// Globale Platzhalter
 float Vorgabe12Van = 14.0;
 float Vorgabe12Vaus = 13.0;
 float Vorgabe24Van = 28.0;
 float Vorgabe24Vaus = 26.4;
+float temperatur = 0.0;
+float luftdruck = 0.0;
+float luftfeuchtigkeit = 0.0;
 
 // Funktion, um die HTML-Seite zu generieren, z.B. mit Platzhaltern
 const char index_html[] PROGMEM = R"rawliteral(
@@ -111,6 +113,10 @@ const char index_html[] PROGMEM = R"rawliteral(
   <br><br>
   <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Vaus()">
   </form><br>
+  <h2 style="font-size:20px;">Temperatur:</h2>
+   <output id="temperatur" for="temperatur"></output>
+  <script>document.write(temperatur)</script>
+  <br>
   </center>
   <iframe style="display:none" name="hidden-form"></iframe>
 </body></html>)rawliteral";
@@ -209,7 +215,28 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Einschaltspannung 12 Volt: ");
+  bool status = bme.begin(0x76);  
+  float temperatur = bme.readTemperature();
+  float luftdruck = bme.readPressure() / 100.0F; // hPa
+  float luftfeuchtigkeit = bme.readHumidity();
+  // Werte in Strings umwandeln
+  char tempchar[8], druckchar[8], feuchtchar[8];
+  dtostrf(temperatur, 1, 2, tempchar);
+  dtostrf(luftdruck, 1, 2, druckchar);
+  dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
+  Serial.print("\nTemperatur : ");
+  Serial.print(tempchar);
+  Serial.print(" °C\n");
+  Serial.print("Luftdruck : ");
+  Serial.print(druckchar);
+  Serial.print(" hPa\n");
+  Serial.print("Luftfeuchtigkeit : ");
+  Serial.print(feuchtchar);
+  Serial.print(" %\n");
+  String tempString = String(tempchar);
+  String druckString = String(druckchar);
+  String feuchtString = String(feuchtchar);
+  Serial.print("\nEinschaltspannung 12 Volt: ");
   Serial.println(Vorgabe12Van);
   Serial.print("Ausschaltspannung 12 Volt: ");
   Serial.println(Vorgabe12Vaus);
@@ -221,17 +248,37 @@ void loop() {
   StatusRelais2 = digitalRead(Relais2Pin);
   StatusRelais3 = digitalRead(Relais3Pin);
   StatusRelais4 = digitalRead(Relais4Pin);
-  Serial.println("\nStatus Relais1:");
-  Serial.println(StatusRelais1);
-  Serial.println("Status Relais2:");
-  Serial.println(StatusRelais2);
-  Serial.println("Status Relais3:");
-  Serial.println(StatusRelais3);
-  Serial.println("Status Relais4:");
-  Serial.println(StatusRelais4);
+  Serial.print("\nRelais1 ist ");
+  if (StatusRelais1 == 1) {
+  Serial.print("aus\n");
+  }
+  else if (StatusRelais1 == 0) {
+    Serial.print("an\n");
+  }
+  Serial.print("Relais2 ist ");
+    if (StatusRelais2 == 1) {
+  Serial.print("aus\n");
+  }
+  else if (StatusRelais2 == 0) {
+  Serial.print("an\n");
+  }
+  Serial.print("Relais3 ist ");
+  if (StatusRelais3 == 1) {
+  Serial.print("aus\n");
+  }
+  else if (StatusRelais3 == 0) {
+  Serial.print("an\n");
+  }
+  Serial.print("Relais4 ist ");
+  if (StatusRelais4 == 1) {
+  Serial.print("aus\n");
+  }
+  else if (StatusRelais4 == 0) {
+  Serial.print("an\n");
+  }
   WertPin12V = analogRead(BattPin12V);
-  Serial.println("\nanaloger Wert 12 Volt:");
-  Serial.println(WertPin12V);
+  Serial.print("\nanaloger Wert 12 Volt:");
+  Serial.print(WertPin12V);
   Spannung12V = WertPin12V/umrechnungsfaktor12V;
   Serial.print("\nSpannung 12 Volt:");
   Serial.println(Spannung12V);
@@ -262,8 +309,8 @@ void loop() {
     Serial.println("Das darf nicht passieren !!!");
   }
   WertPin24V = analogRead(BattPin24V);
-  Serial.println("analoger Wert 24 Volt:");
-  Serial.println(WertPin24V);
+  Serial.print("analoger Wert 24 Volt:");
+  Serial.print(WertPin24V);
   Spannung24V = WertPin24V/umrechnungsfaktor24V;
   Serial.print("\nSpannung 24 Volt:");
   Serial.println(Spannung24V);
@@ -294,28 +341,5 @@ void loop() {
   else {
     Serial.println("Das darf nicht passieren !!!");
   }
-
-  bool status = bme.begin(0x76);  
-  float temperatur = bme.readTemperature();
-  float luftdruck = bme.readPressure() / 100.0F; // hPa
-  float luftfeuchtigkeit = bme.readHumidity();
-
-  // Werte in Strings umwandeln
-  char tempchar[8], druckchar[8], feuchtchar[8];
-  dtostrf(temperatur, 1, 2, tempchar);
-  dtostrf(luftdruck, 1, 2, druckchar);
-  dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
-  Serial.print("\rTemperatur : ");
-  Serial.print(tempchar);
-  Serial.print(" °C\r\n");
-  Serial.print("Luftdruck : ");
-  Serial.print(druckchar);
-  Serial.print(" hPa\r\n");
-  Serial.print("Luftfeuchtigkeit : ");
-  Serial.print(feuchtchar);
-  Serial.print(" %\r\n");
-  String tempString = String(tempchar);
-  String druckString = String(druckchar);
-  String feuchtString = String(feuchtchar);
   delay(20000);
 }
