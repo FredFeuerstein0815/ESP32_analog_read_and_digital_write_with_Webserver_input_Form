@@ -288,6 +288,7 @@ void loop() {
    else if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == HIGH)) {
     Serial.println("Spannung hoch, schalte Strom ein.\n");
     digitalWrite(Relais1Pin, LOW);
+    digitalWrite(Relais2Pin, LOW);
   }
     else if ((Spannung12V <= Vorgabe12Vaus) && (StatusRelais1 == HIGH)) {
     Serial.println("Spannung zu niedig, Strom bleibt aus.\n");
@@ -298,12 +299,15 @@ void loop() {
   else if ((Spannung12V <= Vorgabe12Vaus) && (StatusRelais1 == LOW)) {
     Serial.println("Spannung niedrig, schalte Strom aus.\n");
     digitalWrite(Relais1Pin, HIGH);
+    digitalWrite(Relais2Pin, HIGH);
   }
   else if ((Spannung12V >= Vorgabe12Vaus) && (Spannung12V <= Vorgabe12Van) && (StatusRelais1 == HIGH)){
     Serial.println("Dazwischen, Strom bleibt aus.\n");
   }
   else if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == HIGH)) {
     Serial.println("Spannung hoch genug, schalte Strom an.");
+    digitalWrite(Relais1Pin, LOW);
+    digitalWrite(Relais2Pin, LOW);
   }
   else {
     Serial.println("Das darf nicht passieren !!!");
@@ -319,7 +323,8 @@ void loop() {
   }
    else if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == HIGH)) {
     Serial.println("Spannung hoch, schalte Strom ein.\n");
-    digitalWrite(Relais1Pin, LOW);
+    digitalWrite(Relais3Pin, LOW);
+    digitalWrite(Relais4Pin, LOW);
   }
     else if ((Spannung24V <= Vorgabe24Vaus) && (StatusRelais3 == HIGH)) {
     Serial.println("Spannung zu niedig, Strom bleibt aus.\n");
@@ -329,14 +334,16 @@ void loop() {
   }
   else if ((Spannung24V <= Vorgabe24Vaus) && (StatusRelais3 == LOW)) {
     Serial.println("Spannung niedrig, schalte Strom aus.\n");
-    digitalWrite(Relais1Pin, HIGH);
+    digitalWrite(Relais3Pin, HIGH);
+    digitalWrite(Relais4Pin, HIGH);
   }
   else if ((Spannung24V >= Vorgabe24Vaus) && (Spannung24V <= Vorgabe24Van) && (StatusRelais3 == HIGH)){
     Serial.println("Dazwischen, Strom bleibt aus.\n");
   }
   else if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == HIGH)) {
     Serial.println("Spannung hoch genug, schalte Strom an.");
-    digitalWrite(Relais1Pin, LOW);
+    digitalWrite(Relais3Pin, LOW);
+    digitalWrite(Relais4Pin, LOW);
   }
   else {
     Serial.println("Das darf nicht passieren !!!");
