@@ -397,7 +397,7 @@ void loop() {
   Serial.print("\nanaloger Wert 12 Volt:");
   Serial.print(WertPin12V);
   Spannung12V = WertPin12V/umrechnungsfaktor12V;
-  if (Spannung12V < 3) {
+  if (Spannung12V < 1) {
     Serial.println("\nDas 12 Volt-System ist nicht angeschlossen oder die Batterie ist tot\n");
   }
   else {
@@ -438,7 +438,7 @@ void loop() {
   Serial.print("analoger Wert 24 Volt:");
   Serial.print(WertPin24V);
   Spannung24V = WertPin24V/umrechnungsfaktor24V;
-  if (Spannung24V < 3) {
+  if (Spannung24V < 1) {
     Serial.println("\nDas 24 Volt-System ist nicht angeschlossen oder die Batterie ist tot");
   }
   else{
