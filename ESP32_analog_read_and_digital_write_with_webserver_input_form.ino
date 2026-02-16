@@ -62,14 +62,16 @@ float Spannung24V = 19.99;
 
 // Funktion, um die HTML-Seite zu generieren, z.B. mit Platzhaltern
 const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html><head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="cache-control" content="no-cache" />
   <meta http-equiv="pragma" content="no-cache" />
   <meta http-equiv="expires" content="-1" />
   <meta http-equiv="refresh" content="60" />
   <title>Ein- Ausschaltspannung</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script>
     function submit12Van() {
       alert("Einschaltspannung 12 Volt gespeichert");
@@ -88,119 +90,148 @@ const char index_html[] PROGMEM = R"rawliteral(
       setTimeout(function(){ document.location.reload(false); }, 3000);
     }
   </script>
-  </head>
-  <body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
-  <center>
-  <form action="/get" target="hidden-form">
-  <tabel style="font-size:20px; border:1px solid grey;">
+</head>
+<body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
+<center>
+
+<table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-  <td style="font-size:20px;">Spannung 12 Volt ist:</td>
-  <script>document.write(%Spannung12V%);
-  </script>
+    <th colspan="4" style="font-size:20px;">Spannungen</th>
   </tr>
-  </table>
-  <br>
-  <tabel style="font-size:20px; border:1px solid grey;">
   <tr>
-  <td style="font-size:20px;">Einschaltspannung 12 Volt ist:</td>
-  <script>document.write(%Vorgabe12Van%);
-  </script>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Spannung 12 Volt ist:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung12V%);</script> Volt</td>
+    <td style="width:5%; border:1px solid grey;">
   </tr>
-  </table>
-  <h2 style="font-size:20px">Einschaltspannung 12 Volt soll:</h2>
-  <input style="font-size:20px; width:60px;" value="%Vorgabe12Van%" size="8" type="number" step="0.1" name="Vorgabe12Van" min="12" max="15">
-  </input>
-  <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Van()">
-  </input>
-  </form>
-  <br><br><br>
-  <form action="/get" target="hidden-form">
-  <tabel style="font-size:20px; border:1px solid grey;">
   <tr>
-  <td style="font-size:20px;">Ausschaltspannung 12 Volt ist:</td>
-  <script>document.write(%Vorgabe12Vaus%);
-  </script>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Spannung 24 Volt ist:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung24V%);</script> Volt</td>
+    <td style="width:5%; border:1px solid grey;">
   </tr>
-  </table>
-  <h2 style="font-size:20px;">Ausschaltspannung 12 Volt soll:</h2>
-  <input style="font-size:20px; width: 60px;" value="%Vorgabe12Vaus%" size="8" type="number" step="0.1" name="Vorgabe12Vaus" min="12" max="15">
-  </input>
-  <input style="font-size:20px;" type="submit" value="Senden" onclick="submit12Vaus()">
-  </input>
-  </form>
-  <br><br><br>
-  <form action="/get" target="hidden-form">
-  <tabel style="font-size:20px; border:1px solid grey;">
+</table>
+
+<table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-  <td style="font-size:20px;">Spannung 24 Volt ist:</td>
-  <script>document.write(%Spannung24V%);
-  </script>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">12V Steuerung</th>
   </tr>
-  </table>
-  <br>
-  <tabel style="font-size:20px; border:1px solid grey;">
   <tr>
-  <td style="font-size:20px;">Einschaltspannung 24 Volt ist:</td>
-  <script>document.write(%Vorgabe24Van%);
-  </script>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Strom an bei:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe12Van%);</script> Volt</td>
+    <td style="width:5%; border:1px solid grey;">
   </tr>
-  </table>
-  <h2 style="font-size:20px;">Einschaltspannung 24 Volt soll:</h2>
-  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Van%" size="8" type="number" step="0.1" name="Vorgabe24Van" min="24" max="30">
-  </input>
-  <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Van()">
-  </input>
-  </form>
-  <br><br><br>
-  <form action="/get" target="hidden-form">
-  <tabel style="font-size:20px; border:1px solid grey;">
   <tr>
-  <td style="font-size:20px;">Ausschaltspannung 24 Volt ist:</td>
-  <script>document.write(%Vorgabe24Vaus%);
-  </script>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Strom aus bei:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe12Vaus%);</script> Volt</td>
+    <td style="width:5%; border:1px solid grey;">
   </tr>
-  </table>
-  <h2 style="font-size:20px;">Ausschaltspannung 24 Volt soll:</h2>
-  <input style="font-size:20px; width: 60px;" value="%Vorgabe24Vaus%" size="8" type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30">
-  </input>
-  <input style="font-size:20px;" type="submit" value="Senden" onclick="submit24Vaus()">
-  </input>
-  </form>
-  <br><br><br>
-  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
+</table>
+
+<table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-  <td style="font-size:20px;">Temperatur</td>
-  <td style="font-size:20px;">
-  <script>document.write(%temperatur%);
-  </script>
-  </td>
-  <td style="font-size:20px;">°C</td>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">24V Steuerung</th>
   </tr>
-  </tabel>
-  <br>
-  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
   <tr>
-  <td style="font-size:20px;">Luftdruck</td>
-  <script>document.write(%luftdruck%);
-  </script>
-  </td>
-  <td style="font-size:20px;">hPa</td>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">Strom an bei:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe24Van%);</script> Volt</td>
+    <td style="width:5%; border:1px solid grey;">
   </tr>
-  </tabel>
-  <br>
-  <tabel style="font-size:20px; border:1px solid grey;" colums="3">
   <tr>
-  <td style="font-size:20px;">Luftfeuchtigkeit</td>
-  <script>document.write(%luftfeuchtigkeit%);
-  </script>
-  </td>
-  <td style="font-size:20px;">%</td>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">Strom aus bei:</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe24Vaus%);</script> Volt</td>
+  <td style="width:5%; border:1px solid grey;">
   </tr>
-  </tabel>
-  <br>
-  </center>
-  <iframe style="display:none" name="hidden-form"></iframe>
-</body></html>)rawliteral";
+</table>
+
+<table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
+  <tr>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">Einstellungen</th>
+  </tr>
+  <!-- 12V Eingaben -->
+  <tr>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt ein soll:</td>
+    <td style="width:auto;font-size:20px">
+      <form action="/get" target="hidden-form" style="margin:0;">
+        <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe12Van%" size="5" type="number" step="0.1" name="Vorgabe12Van" min="12" max="15" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit12Van()" />
+      </form>
+      <td style="width:5%; border:1px solid grey;"></td>
+    </td>
+  </tr>
+  <tr>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt aus soll:</td>
+    <td style="width:auto; font-size:20px;">
+      <form action="/get" target="hidden-form" style="margin:0;">
+        <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe12Vaus%" size="5" type="number" step="0.1" name="Vorgabe12Vaus" min="12" max="15" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit12Vaus()" />
+      </form>
+    <td style="width:5%; border:1px solid grey;">
+    </td>
+  </tr>
+  <!-- 24V Eingaben -->
+  <tr>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt ein soll:</td>
+    <td style="width:auto; font-size:20px">
+      <form action="/get" target="hidden-form" style="margin:0;">
+        <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe24Van%" size="5" type="number" step="0.1" name="Vorgabe24Van" min="24" max="30" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit24Van()" />
+      </form>
+    <td style="width:5%; border:1px solid grey;">
+    </td>
+  </tr>
+  <tr>
+    <td style="width:4%; border:1px solid grey;">
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt aus soll:</td>
+    <td style="width:auto; font-size:20px">
+      <form action="/get" target="hidden-form" style="margin:0;">
+        <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe24Vaus%" size="5" type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit24Vaus()" />
+      </form>
+    <td style="width:5%; border:1px solid grey;">
+    </td>
+  </tr>
+</table>
+
+<!-- Tabelle 5: Sensorwerte -->
+<table style="font-size:20px; border:1px solid grey; width:90%; margin-bottom:20px;">
+  <tr>
+    <th colspan="5" style="font-size:20px;">Sensorwerte</th>
+  </tr>
+  <tr>
+    <td style="width:10%;font-size:20px"></td>
+    <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Temperatur</td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%temperatur%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">°C</td>
+    <td style="width:10%;font-size:20px"></td>
+  </tr>
+  <tr>
+  <td style="width:10%;font-size:20px"></td>
+    <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Luftdruck</td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%luftdruck%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">hPa</td>
+    <td style="width:10%;font-size:20px"></td>
+  </tr>
+  <tr>
+  <td style="width:10%;font-size:20px"></td>
+    <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Luftfeuchtigkeit</td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%luftfeuchtigkeit%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">%</td>
+    <td style="width:10%;font-size:20px"></td>
+  </tr>
+</table>
+
+</center>
+<iframe style="display:none" name="hidden-form"></iframe>
+</body>
+</html>)rawliteral";
 
 // Funktion, um die HTML-Seite zu generieren und Platzhalter zu ersetzen
 String processor(const String& var){
