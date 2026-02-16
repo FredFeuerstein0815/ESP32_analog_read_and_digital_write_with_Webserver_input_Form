@@ -8,6 +8,7 @@
 
 Adafruit_BME280 bme;
 
+const int Messintervall = 20000; //in ms
 const int BattPin12V = 36;
 const int BattPin24V = 39;
 const int Relais1Pin = 13;
@@ -475,5 +476,5 @@ void loop() {
     Serial.println("Das darf nicht passieren !!!");
   }
   }
-  delay(20000);
+  delay(Messintervall);
 }
