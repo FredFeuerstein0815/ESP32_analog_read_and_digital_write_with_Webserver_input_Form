@@ -3,12 +3,15 @@
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <WiFi.h>
 #include <Wire.h>
 
 Adafruit_BME280 bme;
 
-const int Messintervall = 20000; //in ms
+const int MessintervallBatt = 20000;
+const int MessintervallBME280 = 1800000;
 const int BattPin12V = 36;
 const int BattPin24V = 39;
 const int Relais1Pin = 13;
@@ -18,6 +21,19 @@ const int Relais4Pin = 27;
 
 const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 90.73;
+
+float temperature_bme = 0;
+float luftdruck_bme = 0;
+float luftfeuchtigkeit_bme = 0;
+float Vorgabe12Van = 14.0;
+float Vorgabe12Vaus = 13.2;
+float Vorgabe24Van = 28.0;
+float Vorgabe24Vaus = 26.4;
+float temperatur = 0;
+float luftdruck = 0;
+float luftfeuchtigkeit = 0;
+float Spannung12V = 0;
+float Spannung24V = 0;
 
 int StatusRelais1 = 0;
 int StatusRelais2 = 0;
@@ -37,8 +53,6 @@ AsyncWebServer server(80);
 
 const char* ssid = "SSID";
 const char* password = "Geheim";
-
-// Parameter-Namen
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
 const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
 const char* PARAM_FLOAT24Van = "Vorgabe24Van";
@@ -48,23 +62,8 @@ const char* PARAM_Luftdruck = "luftdruck";
 const char* PARAM_Luftfeuchtigkeit = "luftfeuchtigkeit";
 const char* PARAM_Spannung12V = "Spannung12V";
 const char* PARAM_Spannung24V = "Spannung24V";
-
-// Globale Platzhalter
-float Vorgabe12Van = 14.0;
-float Vorgabe12Vaus = 13.2;
-float Vorgabe24Van = 28.0;
-float Vorgabe24Vaus = 26.4;
-float temperatur = 19.9;
-float luftdruck = 999.9;
-float luftfeuchtigkeit = 50.0;
-float Spannung12V = 9.99;
-float Spannung24V = 19.99;
-
-// Funktion, um die HTML-Seite zu generieren, z.B. mit Platzhaltern
 const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML>
-<html>
-<head>
+<!DOCTYPE HTML><html><head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="cache-control" content="no-cache" />
   <meta http-equiv="pragma" content="no-cache" />
@@ -90,10 +89,9 @@ const char index_html[] PROGMEM = R"rawliteral(
       setTimeout(function(){ document.location.reload(false); }, 3000);
     }
   </script>
-</head>
-<body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
-<center>
-
+  </head>
+  <body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
+  <center>
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
     <th colspan="4" style="font-size:20px;">Spannungen</th>
@@ -227,41 +225,19 @@ const char index_html[] PROGMEM = R"rawliteral(
     <td style="width:10%;font-size:20px"></td>
   </tr>
 </table>
+</center></body></html>)rawliteral";
 
-</center>
-<iframe style="display:none" name="hidden-form"></iframe>
-</body>
-</html>)rawliteral";
-
-// Funktion, um die HTML-Seite zu generieren und Platzhalter zu ersetzen
+// Platzhalter
 String processor(const String& var){
-  if(var == "Vorgabe12Van"){
-    return String(Vorgabe12Van);
-  }
-  else if(var == "Vorgabe12Vaus"){
-    return String(Vorgabe12Vaus);
-  }
-  else if(var == "Vorgabe24Van"){
-    return String(Vorgabe24Van);
-  }
-  else if(var == "Vorgabe24Vaus"){
-    return String(Vorgabe24Vaus);
-  }
-    else if(var == "temperatur"){
-    return String(temperatur);
-  }
-    else if(var == "luftdruck"){
-    return String(luftdruck);
-  }
-    else if(var == "luftfeuchtigkeit"){
-    return String(luftfeuchtigkeit);
-  }
-    else if(var == "Spannung12V"){
-    return String(Spannung12V);
-  }
-    else if(var == "Spannung24V"){
-    return String(Spannung24V);
-  }
+  if(var == "Vorgabe12Van"){ return String(Vorgabe12Van); }
+  if(var == "Vorgabe12Vaus"){ return String(Vorgabe12Vaus); }
+  if(var == "Vorgabe24Van"){ return String(Vorgabe24Van); }
+  if(var == "Vorgabe24Vaus"){ return String(Vorgabe24Vaus); }
+  if(var == "temperatur"){ return String(temperatur); }
+  if(var == "luftdruck"){ return String(luftdruck); }
+  if(var == "luftfeuchtigkeit"){ return String(luftfeuchtigkeit); }
+  if(var == "Spannung12V"){ return String(Spannung12V); }
+  if(var == "Spannung24V"){ return String(Spannung24V); }
   return String();
 }
 
@@ -269,35 +245,81 @@ void notFound(AsyncWebServerRequest *request) {
   request->send(404, "text/plain", "404: Not found");
 }
 
+void bmeTask(void *pvParameters) {
+  const TickType_t delay = pdMS_TO_TICKS(MessintervallBME280);
+  for(;;) {
+    temperatur = bme.readTemperature();
+    luftdruck = bme.readPressure() / 100.0F; // hPa
+    luftfeuchtigkeit = bme.readHumidity();
+      // Werte in Strings umwandeln
+    char tempchar[8], druckchar[8], feuchtchar[8];
+    dtostrf(temperatur, 1, 2, tempchar);
+    dtostrf(luftdruck, 1, 2, druckchar);
+    dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
+    Serial.print("\nTemperatur : ");
+    Serial.print(tempchar);
+    Serial.print(" °C\n");
+    Serial.print("Luftdruck : ");
+    Serial.print(druckchar);
+    Serial.print(" hPa\n");
+    Serial.print("Luftfeuchtigkeit : ");
+    Serial.print(feuchtchar);
+    Serial.print(" %\n");
+    String tempString = String(tempchar);
+    String druckString = String(druckchar);
+    String feuchtString = String(feuchtchar);
+    vTaskDelay(delay);
+  }
+}
+
+void analogTask(void *pvParameters) {
+  const TickType_t delay = pdMS_TO_TICKS(MessintervallBatt);
+  for(;;) {
+    WertPin12V = analogRead(BattPin12V);
+    Spannung12V = WertPin12V / umrechnungsfaktor12V;
+    WertPin24V = analogRead(BattPin24V);
+    Spannung24V = WertPin24V / umrechnungsfaktor24V;
+    Serial.println("\n");
+    Serial.print("analoger Wert 12 Volt: ");
+    Serial.print(WertPin12V);
+    Serial.println("\n");
+    Serial.print("Spannung 12 Volt:");
+    Serial.print(Spannung12V);
+    Serial.println("\n");
+    Serial.print("analoger Wert 24 Volt: ");
+    Serial.print(WertPin24V);
+    Serial.println("\n");
+    Serial.print("\Spannung 24 Volt: ");
+    Serial.print(Spannung24V);
+    Serial.println("\n");
+    vTaskDelay(delay);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("Start");
   WiFi.mode(WIFI_STA);
   WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS);
   Serial.print("Verbindung zu WLAN: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
-  Serial.println("WLAN-Verbindung wird hergestellt...");
-  
   int max_attempts = 20;
   while (WiFi.status() != WL_CONNECTED && max_attempts--) {
     delay(1000);
     Serial.print(".");
   }
-  
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nConnected to WiFi");
+    Serial.println("\nVerbunden");
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\nFailed to connect");
+    Serial.println("\nFehler beim Verbinden");
   }
+
   bme.begin(0x76);
-  // Webserver starten
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     String htmlResponse = index_html;
-    // Platzhalter durch Variablen ersetzen
     htmlResponse.replace("%Vorgabe12Van%", String(Vorgabe12Van));
     htmlResponse.replace("%Vorgabe12Vaus%", String(Vorgabe12Vaus));
     htmlResponse.replace("%Vorgabe24Van%", String(Vorgabe24Van));
@@ -310,49 +332,40 @@ void setup() {
     request->send(200, "text/html", htmlResponse);
   });
 
-  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if(request->hasParam(PARAM_FLOAT12Van)) {
-      String value = request->getParam(PARAM_FLOAT12Van)->value();
-      Vorgabe12Van = value.toFloat();
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request){
+    if(request->hasParam(PARAM_FLOAT12Van)){
+      Vorgabe12Van = request->getParam(PARAM_FLOAT12Van)->value().toFloat();
     }
-    if(request->hasParam(PARAM_FLOAT12Vaus)) {
-      String value = request->getParam(PARAM_FLOAT12Vaus)->value();
-      Vorgabe12Vaus = value.toFloat();
+    if(request->hasParam(PARAM_FLOAT12Vaus)){
+      Vorgabe12Vaus = request->getParam(PARAM_FLOAT12Vaus)->value().toFloat();
     }
-    if(request->hasParam(PARAM_FLOAT24Van)) {
-      String value = request->getParam(PARAM_FLOAT24Van)->value();
-      Vorgabe24Van = value.toFloat();
+    if(request->hasParam(PARAM_FLOAT24Van)){
+      Vorgabe24Van = request->getParam(PARAM_FLOAT24Van)->value().toFloat();
     }
-    if(request->hasParam(PARAM_FLOAT24Vaus)) {
-      String value = request->getParam(PARAM_FLOAT24Vaus)->value();
-      Vorgabe24Vaus = value.toFloat();
+    if(request->hasParam(PARAM_FLOAT24Vaus)){
+      Vorgabe24Vaus = request->getParam(PARAM_FLOAT24Vaus)->value().toFloat();
     }
-    if(request->hasParam(PARAM_Temperatur)) {
-      String value = request->getParam(PARAM_Temperatur)->value();
-      temperatur = value.toFloat();
+    if(request->hasParam(PARAM_Temperatur)){
+      temperatur = request->getParam(PARAM_Temperatur)->value().toFloat();
     }
-    if(request->hasParam(PARAM_Luftdruck)) {
-      String value = request->getParam(PARAM_Luftdruck)->value();
-      luftdruck = value.toFloat();
+    if(request->hasParam(PARAM_Luftdruck)){
+      luftdruck = request->getParam(PARAM_Luftdruck)->value().toFloat();
     }
-    if(request->hasParam(PARAM_Luftfeuchtigkeit)) {
-      String value = request->getParam(PARAM_Luftfeuchtigkeit)->value();
-      luftfeuchtigkeit = value.toFloat();
+    if(request->hasParam(PARAM_Luftfeuchtigkeit)){
+      luftfeuchtigkeit = request->getParam(PARAM_Luftfeuchtigkeit)->value().toFloat();
     }
-      if(request->hasParam(PARAM_Spannung12V)) {
-      String value = request->getParam(PARAM_Spannung12V)->value();
-      Spannung12V = value.toFloat();
+    if(request->hasParam(PARAM_Spannung12V)){
+      Spannung12V = request->getParam(PARAM_Spannung12V)->value().toFloat();
     }
-      if(request->hasParam(PARAM_Spannung24V)) {
-      String value = request->getParam(PARAM_Spannung24V)->value();
-      Spannung24V = value.toFloat();
+    if(request->hasParam(PARAM_Spannung24V)){
+      Spannung24V = request->getParam(PARAM_Spannung24V)->value().toFloat();
     }
     request->send(200, "text/plain", "OK");
   });
 
   server.onNotFound(notFound);
   server.begin();
-  Serial.println("Webserver gestartet");
+
   pinMode(Relais1Pin, OUTPUT);
   pinMode(Relais2Pin, OUTPUT);
   pinMode(Relais3Pin, OUTPUT);
@@ -361,151 +374,12 @@ void setup() {
   digitalWrite(Relais2Pin, HIGH);
   digitalWrite(Relais3Pin, HIGH);
   digitalWrite(Relais4Pin, HIGH);
+
   Serial.println("Alle Relais ausgeschaltet");
+
+  xTaskCreatePinnedToCore(bmeTask, "BME280_Task", 4096, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(analogTask, "Analog_Task", 4096, NULL, 1, NULL, 1);
 }
 
 void loop() {
-  temperatur = bme.readTemperature();
-  luftdruck = bme.readPressure() / 100.0F; // hPa
-  luftfeuchtigkeit = bme.readHumidity();
-  // Werte in Strings umwandeln
-  char tempchar[8], druckchar[8], feuchtchar[8];
-  dtostrf(temperatur, 1, 2, tempchar);
-  dtostrf(luftdruck, 1, 2, druckchar);
-  dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
-  Serial.print("\nTemperatur : ");
-  Serial.print(tempchar);
-  Serial.print(" °C\n");
-  Serial.print("Luftdruck : ");
-  Serial.print(druckchar);
-  Serial.print(" hPa\n");
-  Serial.print("Luftfeuchtigkeit : ");
-  Serial.print(feuchtchar);
-  Serial.print(" %\n");
-  String tempString = String(tempchar);
-  String druckString = String(druckchar);
-  String feuchtString = String(feuchtchar);
-  Serial.print("\nEinschaltspannung 12 Volt: ");
-  Serial.println(Vorgabe12Van);
-  Serial.print("Ausschaltspannung 12 Volt: ");
-  Serial.println(Vorgabe12Vaus);
-  Serial.print("Einschaltspannung 24 Volt: ");
-  Serial.println(Vorgabe24Van);
-  Serial.print("Ausschaltspannung 24 Volt: ");
-  Serial.println(Vorgabe24Vaus);
-  StatusRelais1 = digitalRead(Relais1Pin);
-  StatusRelais2 = digitalRead(Relais2Pin);
-  StatusRelais3 = digitalRead(Relais3Pin);
-  StatusRelais4 = digitalRead(Relais4Pin);
-  Serial.print("\nRelais1 ist ");
-  if (StatusRelais1 == 1) {
-  Serial.print("aus\n");
-  }
-  else if (StatusRelais1 == 0) {
-    Serial.print("an\n");
-  }
-  Serial.print("Relais2 ist ");
-    if (StatusRelais2 == 1) {
-  Serial.print("aus\n");
-  }
-  else if (StatusRelais2 == 0) {
-  Serial.print("an\n");
-  }
-  Serial.print("Relais3 ist ");
-  if (StatusRelais3 == 1) {
-  Serial.print("aus\n");
-  }
-  else if (StatusRelais3 == 0) {
-  Serial.print("an\n");
-  }
-  Serial.print("Relais4 ist ");
-  if (StatusRelais4 == 1) {
-  Serial.print("aus\n");
-  }
-  else if (StatusRelais4 == 0) {
-  Serial.print("an\n");
-  }
-  WertPin12V = analogRead(BattPin12V);
-  Serial.print("\nanaloger Wert 12 Volt:");
-  Serial.print(WertPin12V);
-  Spannung12V = WertPin12V/umrechnungsfaktor12V;
-  if (Spannung12V < 1) {
-    Serial.println("\nDas 12 Volt-System ist nicht angeschlossen oder die Batterie ist tot\n");
-  }
-  else {
-  Serial.print("\nSpannung 12 Volt:");
-  Serial.println(Spannung12V);
-  if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == LOW)){
-    Serial.println("Spannung hoch, Strom ist an und bleibt an.\n");
-  }
-   else if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == HIGH)) {
-    Serial.println("Spannung hoch, schalte Strom ein.\n");
-    digitalWrite(Relais1Pin, LOW);
-    digitalWrite(Relais2Pin, LOW);
-  }
-    else if ((Spannung12V <= Vorgabe12Vaus) && (StatusRelais1 == HIGH)) {
-    Serial.println("Spannung zu niedig, Strom bleibt aus.\n");
-  }
-  else if ((Spannung12V <= Vorgabe12Van) && (Spannung12V >= Vorgabe12Vaus) && (StatusRelais1 == LOW)) {
-    Serial.println("Dazwischen, Strom bleibt an.\n");
-  }
-  else if ((Spannung12V <= Vorgabe12Vaus) && (StatusRelais1 == LOW)) {
-    Serial.println("Spannung niedrig, schalte Strom aus.\n");
-    digitalWrite(Relais1Pin, HIGH);
-    digitalWrite(Relais2Pin, HIGH);
-  }
-  else if ((Spannung12V >= Vorgabe12Vaus) && (Spannung12V <= Vorgabe12Van) && (StatusRelais1 == HIGH)){
-    Serial.println("Dazwischen, Strom bleibt aus.\n");
-  }
-  else if ((Spannung12V >= Vorgabe12Van) && (StatusRelais1 == HIGH)) {
-    Serial.println("Spannung hoch genug, schalte Strom an.");
-    digitalWrite(Relais1Pin, LOW);
-    digitalWrite(Relais2Pin, LOW);
-  }
-  else {
-    Serial.println("Das darf nicht passieren !!!");
-  }
-  }
-  WertPin24V = analogRead(BattPin24V);
-  Serial.print("analoger Wert 24 Volt:");
-  Serial.print(WertPin24V);
-  Spannung24V = WertPin24V/umrechnungsfaktor24V;
-  if (Spannung24V < 1) {
-    Serial.println("\nDas 24 Volt-System ist nicht angeschlossen oder die Batterie ist tot");
-  }
-  else{
-  Serial.print("\nSpannung 24 Volt:");
-  Serial.println(Spannung24V);
-    if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == LOW)){
-    Serial.println("Spannung hoch, Strom ist an und bleibt an.\n");
-  }
-   else if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == HIGH)) {
-    Serial.println("Spannung hoch, schalte Strom ein.\n");
-    digitalWrite(Relais3Pin, LOW);
-    digitalWrite(Relais4Pin, LOW);
-  }
-    else if ((Spannung24V <= Vorgabe24Vaus) && (StatusRelais3 == HIGH)) {
-    Serial.println("Spannung zu niedig, Strom bleibt aus.\n");
-  }
-  else if ((Spannung24V <= Vorgabe24Van) && (Spannung24V >= Vorgabe24Vaus) && (StatusRelais3 == LOW)) {
-    Serial.println("Dazwischen, Strom bleibt an.\n");
-  }
-  else if ((Spannung24V <= Vorgabe24Vaus) && (StatusRelais3 == LOW)) {
-    Serial.println("Spannung niedrig, schalte Strom aus.\n");
-    digitalWrite(Relais3Pin, HIGH);
-    digitalWrite(Relais4Pin, HIGH);
-  }
-  else if ((Spannung24V >= Vorgabe24Vaus) && (Spannung24V <= Vorgabe24Van) && (StatusRelais3 == HIGH)){
-    Serial.println("Dazwischen, Strom bleibt aus.\n");
-  }
-  else if ((Spannung24V >= Vorgabe24Van) && (StatusRelais3 == HIGH)) {
-    Serial.println("Spannung hoch genug, schalte Strom an.");
-    digitalWrite(Relais3Pin, LOW);
-    digitalWrite(Relais4Pin, LOW);
-  }
-  else {
-    Serial.println("Das darf nicht passieren !!!");
-  }
-  }
-  delay(Messintervall);
 }
