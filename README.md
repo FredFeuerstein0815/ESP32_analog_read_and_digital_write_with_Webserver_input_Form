@@ -1,6 +1,6 @@
 Mit diesem Script liest ein ESP32 analoge Werte und schaltet in Abhängigkeit dieser Werte GPIOs an oder aus.
 
-Die vorgegebenen Werte lassen sich auf dem Webserver einstellen. (Bis jetzt nur ein Wert(, vom delay (vorletzte Zeile) abhängig) alle 20 Sekunden).
+Die vorgegebenen Werte lassen sich auf dem Webserver einstellen. (Bis jetzt nur ein Wert vom delay abhängig.
 
 Zudem werden die Werte eines BME280 ausgelesen und angezeigt.
 Es wird Threading benutzt, so dass die Auslesezeiten für den BME280 und der analogen Eingänge des ESP32 unterschiedlich sein können.
