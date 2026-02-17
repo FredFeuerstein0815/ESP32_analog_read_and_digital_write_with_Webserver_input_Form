@@ -102,10 +102,9 @@ const char index_html[] PROGMEM = R"rawliteral(
   </head>
   <body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
   <center>
-  <script>document.write(%DatumZeit%);</script>
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-    <th colspan="4" style="font-size:20px;">gemessene Spannung</th>
+    <th colspan="4" style="font-size:20px;">gemessene Spannung %DatumZeit%</th>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
@@ -212,7 +211,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 <!-- Tabelle 5: Sensorwerte -->
 <table style="font-size:20px; border:1px solid grey; width:90%; margin-bottom:20px;">
   <tr>
-    <th colspan="5" style="font-size:20px;">Sensorwerte</th>
+    <th colspan="5" style="font-size:20px;">Sensorwerte %DatumZeit%</th>
   </tr>
   <tr>
     <td style="width:10%;font-size:20px"></td>
@@ -236,7 +235,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     <td style="width:10%;font-size:20px"></td>
   </tr>
 </table>
-<script>document.write(%DatumZeit%);</script>
+%DatumZeit%
 </center></body></html>)rawliteral";
 
 String processor(const String& var){
@@ -319,7 +318,7 @@ void NTPTask(void *pvParameters) {
       Serial.println("Zeit konnte nicht synchronisiert werden");
     }
     char timeStringBuff[20];
-    strftime(timeStringBuff, sizeof(timeStringBuff), "%y-%m-%d %H:%M:%S", &timeinfo);
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%d.%m.%y %H:%M:%S", &timeinfo);
     DatumZeit = String(timeStringBuff);
     Serial.println(DatumZeit);
     vTaskDelay(delay);
