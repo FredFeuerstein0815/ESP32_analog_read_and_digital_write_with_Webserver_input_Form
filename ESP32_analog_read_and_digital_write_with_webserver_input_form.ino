@@ -12,21 +12,15 @@
 
 Adafruit_BME280 bme;
 
-const int daylightOffset_sec = 3600; // 1 Std
-const int MessintervallBatt = 20000; // 20 Sek
-const int MessintervallBME280 = 1800000; // 30 Min
-const int IntervallNTP = 43200000; // 12 Std
-const int BattPin12V = 36;
-const int BattPin24V = 39;
-const int Relais1Pin = 13;
-const int Relais2Pin = 12;
-const int Relais3Pin = 14;
-const int Relais4Pin = 27;
+IPAddress local_IP(192, 168, 0, 99);
+IPAddress gateway(192, 168, 0, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress primaryDNS(8, 8, 8, 8);
+IPAddress secondaryDNS(8, 8, 4, 4);
 
-const float umrechnungsfaktor12V = 174.867;
-const float umrechnungsfaktor24V = 96.85;
+AsyncWebServer server(80);
 
-const long  gmtOffset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
+String DatumZeit;
 
 float temperature_bme = 0;
 float luftdruck_bme = 0;
@@ -50,14 +44,22 @@ int StatusRelais4 = 0;
 int WertPin12V = 0;
 int WertPin24V = 0;
 
-IPAddress local_IP(192, 168, 0, 99);
-IPAddress gateway(192, 168, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress primaryDNS(8, 8, 8, 8);
-IPAddress secondaryDNS(8, 8, 4, 4);
+const int daylightOffset_sec = 3600; // 1 Std
+const int MessintervallBatt = 20000; // 20 Sek
+const int MessintervallBME280 = 1800000; // 30 Min
+const int IntervallNTP = 43200000; // 12 Std
+const int BattPin12V = 36;
+const int BattPin24V = 39;
+const int Relais1Pin = 13;
+const int Relais2Pin = 12;
+const int Relais3Pin = 14;
+const int Relais4Pin = 27;
 
-AsyncWebServer server(80);
+const float umrechnungsfaktor12V = 174.867;
+const float umrechnungsfaktor24V = 96.85;
 
+const long  gmtOffset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
+const char* PARAM_DatumZeit = "DatumZeit";
 const char* ssid = "SSID";
 const char* password = "Geheim";
 const char* NTP = "de.pool.ntp.org";
@@ -100,6 +102,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   </head>
   <body bgcolor="#000000" text="#FFFFFF" link="#FFFFFF" vlink="#FFFFFF" alink="#FFFFFF">
   <center>
+  <script>document.write(%DatumZeit%);</script>
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
     <th colspan="4" style="font-size:20px;">gemessene Spannung</th>
@@ -233,10 +236,11 @@ const char index_html[] PROGMEM = R"rawliteral(
     <td style="width:10%;font-size:20px"></td>
   </tr>
 </table>
+<script>document.write(%DatumZeit%);</script>
 </center></body></html>)rawliteral";
 
-// Platzhalter
 String processor(const String& var){
+  if(var == "DatumZeit"){ return String(DatumZeit); }
   if(var == "Vorgabe12Van"){ return String(Vorgabe12Van); }
   if(var == "Vorgabe12Vaus"){ return String(Vorgabe12Vaus); }
   if(var == "Vorgabe24Van"){ return String(Vorgabe24Van); }
@@ -259,7 +263,6 @@ void bmeTask(void *pvParameters) {
     temperatur = bme.readTemperature();
     luftdruck = bme.readPressure() / 100.0F; // hPa
     luftfeuchtigkeit = bme.readHumidity();
-      // Werte in Strings umwandeln
     char tempchar[8], druckchar[8], feuchtchar[8];
     dtostrf(temperatur, 1, 2, tempchar);
     dtostrf(luftdruck, 1, 2, druckchar);
@@ -303,14 +306,23 @@ void analogTask(void *pvParameters) {
 void NTPTask(void *pvParameters) {
   const TickType_t delay = pdMS_TO_TICKS(IntervallNTP);
   for(;;) {
+    configTime(gmtOffset_sec, daylightOffset_sec, NTP);
+    Serial.println("Warte auf Zeitsynchronisation...");
     struct tm timeinfo;
+    int retries = 10;
+    while (retries-- > 0) {
     if (getLocalTime(&timeinfo)) {
-      Serial.println(&timeinfo, "\n%d.%m.%Y %H:%M:%S Uhr");
-      vTaskDelay(delay);
-    } else {
-      Serial.println("Zeit nicht verfügbar");
-      vTaskDelay(delay);
+      Serial.println("Zeit synchronisiert");
+    break;}
     }
+    if (retries <= 0) {
+      Serial.println("Zeit konnte nicht synchronisiert werden");
+    }
+    char timeStringBuff[20];
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%y-%m-%d %H:%M:%S", &timeinfo);
+    DatumZeit = String(timeStringBuff);
+    Serial.println(DatumZeit);
+    vTaskDelay(delay);
   }
 }
 
@@ -335,24 +347,10 @@ void setup() {
     Serial.println("\nFehler beim Verbinden");
   }
 
-  configTime(gmtOffset_sec, daylightOffset_sec, NTP);
-  Serial.println("Warte auf Zeitsynchronisation...");
-  struct tm timeinfo;
-  int retries = 10;
-  while (retries-- > 0) {
-    if (getLocalTime(&timeinfo)) {
-      Serial.println("Zeit synchronisiert");
-      break;
-    }
-    delay(1000);
-  }
-  if (retries <= 0) {
-    Serial.println("Zeit konnte nicht synchronisiert werden");
-  }
-
   bme.begin(0x76);
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     String htmlResponse = index_html;
+    htmlResponse.replace("%DatumZeit%", String(DatumZeit));
     htmlResponse.replace("%Vorgabe12Van%", String(Vorgabe12Van));
     htmlResponse.replace("%Vorgabe12Vaus%", String(Vorgabe12Vaus));
     htmlResponse.replace("%Vorgabe24Van%", String(Vorgabe24Van));
@@ -366,6 +364,9 @@ void setup() {
   });
 
   server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request){
+    if(request->hasParam(PARAM_DatumZeit)){
+      DatumZeit = request->getParam(PARAM_DatumZeit)->value();
+    }
     if(request->hasParam(PARAM_FLOAT12Van)){
       Vorgabe12Van = request->getParam(PARAM_FLOAT12Van)->value().toFloat();
     }
