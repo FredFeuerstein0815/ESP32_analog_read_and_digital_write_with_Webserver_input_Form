@@ -109,13 +109,13 @@ const char index_html[] PROGMEM = R"rawliteral(
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">12 Volt</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung12V%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Spannung12V% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">24 Volt</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung24V%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Spannung24V% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
 </table>
@@ -127,13 +127,13 @@ const char index_html[] PROGMEM = R"rawliteral(
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Strom an bei:</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe12Van%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Vorgabe12Van% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Strom aus bei:</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe12Vaus%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Vorgabe12Vaus% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
 </table>
@@ -145,13 +145,13 @@ const char index_html[] PROGMEM = R"rawliteral(
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">Strom an bei:</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe24Van%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Vorgabe24Van% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
     <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">Strom aus bei:</td>
-    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Vorgabe24Vaus%);</script> Volt</td>
+    <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Vorgabe24Vaus% Volt</td>
   <td style="width:5%; border:1px solid grey;">
   </tr>
 </table>
@@ -216,21 +216,21 @@ const char index_html[] PROGMEM = R"rawliteral(
   <tr>
     <td style="width:10%;font-size:20px"></td>
     <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Temperatur</td>
-    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%temperatur%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">%temperatur%/td>
     <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">°C</td>
     <td style="width:10%;font-size:20px"></td>
   </tr>
   <tr>
   <td style="width:10%;font-size:20px"></td>
     <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Luftdruck</td>
-    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%luftdruck%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">%luftdruck%</td>
     <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">hPa</td>
     <td style="width:10%;font-size:20px"></td>
   </tr>
   <tr>
   <td style="width:10%;font-size:20px"></td>
     <td style="width:30%;font-size:20px;text-align: center; border:1px solid grey;">Luftfeuchtigkeit</td>
-    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%luftfeuchtigkeit%);</script></td>
+    <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">%luftfeuchtigkeit%</td>
     <td style="width:20%;font-size:20px;text-align: left; border:1px solid grey;">%</td>
     <td style="width:10%;font-size:20px"></td>
   </tr>
