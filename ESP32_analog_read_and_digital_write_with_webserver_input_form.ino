@@ -8,10 +8,14 @@
 #include <WiFi.h>
 #include <Wire.h>
 
+#include "time.h"
+
 Adafruit_BME280 bme;
 
-const int MessintervallBatt = 20000;
-const int MessintervallBME280 = 1800000;
+const int daylightOffset_sec = 3600; // 1 Std
+const int MessintervallBatt = 20000; // 20 Sek
+const int MessintervallBME280 = 1800000; // 30 Min
+const int IntervallNTP = 43200000; // 12 Std
 const int BattPin12V = 36;
 const int BattPin24V = 39;
 const int Relais1Pin = 13;
@@ -20,7 +24,9 @@ const int Relais3Pin = 14;
 const int Relais4Pin = 27;
 
 const float umrechnungsfaktor12V = 174.867;
-const float umrechnungsfaktor24V = 90.73;
+const float umrechnungsfaktor24V = 96.85;
+
+const long  gmtOffset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
 
 float temperature_bme = 0;
 float luftdruck_bme = 0;
@@ -35,6 +41,7 @@ float luftfeuchtigkeit = 0;
 float Spannung12V = 0;
 float Spannung24V = 0;
 
+int Verbindungsversuche = 20;
 int StatusRelais1 = 0;
 int StatusRelais2 = 0;
 int StatusRelais3 = 0;
@@ -53,6 +60,7 @@ AsyncWebServer server(80);
 
 const char* ssid = "SSID";
 const char* password = "Geheim";
+const char* NTP = "de.pool.ntp.org";
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
 const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
 const char* PARAM_FLOAT24Van = "Vorgabe24Van";
@@ -94,17 +102,17 @@ const char index_html[] PROGMEM = R"rawliteral(
   <center>
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-    <th colspan="4" style="font-size:20px;">Spannungen</th>
+    <th colspan="4" style="font-size:20px;">gemessene Spannung</th>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Spannung 12 Volt ist:</td>
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">12 Volt</td>
     <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung12V%);</script> Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">Spannung 24 Volt ist:</td>
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">24 Volt</td>
     <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;"><script>document.write(%Spannung24V%);</script> Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
@@ -112,7 +120,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-    <th colspan="4" style="font-size:20px; border:1px solid grey;">12V Steuerung</th>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">Schaltspannung 12V</th>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
@@ -130,7 +138,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-    <th colspan="4" style="font-size:20px; border:1px solid grey;">24V Steuerung</th>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">Schaltspannung 24V</th>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
@@ -148,27 +156,27 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 <table style="font-size:20px; border:1px solid grey; width:99%; margin-bottom:20px;">
   <tr>
-    <th colspan="4" style="font-size:20px; border:1px solid grey;">Einstellungen</th>
+    <th colspan="4" style="font-size:20px; border:1px solid grey;">Ändern der Schaltspannungen</th>
   </tr>
   <!-- 12V Eingaben -->
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt ein soll:</td>
+    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt ein:</td>
     <td style="width:auto;font-size:20px">
       <form action="/get" target="hidden-form" style="margin:0;">
         <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe12Van%" size="5" type="number" step="0.1" name="Vorgabe12Van" min="12" max="15" />
-        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit12Van()" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Speichern" onclick="submit12Van()" />
       </form>
       <td style="width:5%; border:1px solid grey;"></td>
     </td>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt aus soll:</td>
+    <td style="width:auto; font-size:20px; text-align: right; border:1px solid grey;">12 Volt aus:</td>
     <td style="width:auto; font-size:20px;">
       <form action="/get" target="hidden-form" style="margin:0;">
         <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe12Vaus%" size="5" type="number" step="0.1" name="Vorgabe12Vaus" min="12" max="15" />
-        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit12Vaus()" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Speichern" onclick="submit12Vaus()" />
       </form>
     <td style="width:5%; border:1px solid grey;">
     </td>
@@ -176,22 +184,22 @@ const char index_html[] PROGMEM = R"rawliteral(
   <!-- 24V Eingaben -->
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt ein soll:</td>
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt ein:</td>
     <td style="width:auto; font-size:20px">
       <form action="/get" target="hidden-form" style="margin:0;">
         <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe24Van%" size="5" type="number" step="0.1" name="Vorgabe24Van" min="24" max="30" />
-        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit24Van()" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Speichern" onclick="submit24Van()" />
       </form>
     <td style="width:5%; border:1px solid grey;">
     </td>
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt aus soll:</td>
+    <td style="width:auto; font-size:20px;text-align: right; border:1px solid grey;">24 Volt aus:</td>
     <td style="width:auto; font-size:20px">
       <form action="/get" target="hidden-form" style="margin:0;">
         <input style="font-size:20px;text-align: left; width:70px; border:1px solid grey;" value="%Vorgabe24Vaus%" size="5" type="number" step="0.1" name="Vorgabe24Vaus" min="24" max="30" />
-        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Senden" onclick="submit24Vaus()" />
+        <input style="font-size:20px;text-align: left; width:auto; border:1px solid grey;" type="submit" value="Speichern" onclick="submit24Vaus()" />
       </form>
     <td style="width:5%; border:1px solid grey;">
     </td>
@@ -279,20 +287,30 @@ void analogTask(void *pvParameters) {
     Spannung12V = WertPin12V / umrechnungsfaktor12V;
     WertPin24V = analogRead(BattPin24V);
     Spannung24V = WertPin24V / umrechnungsfaktor24V;
-    Serial.println("\n");
-    Serial.print("analoger Wert 12 Volt: ");
+    Serial.print("\nanaloger Wert 12 Volt: ");
     Serial.print(WertPin12V);
-    Serial.println("\n");
-    Serial.print("Spannung 12 Volt:");
+    Serial.print("\nSpannung 12 Volt:");
     Serial.print(Spannung12V);
-    Serial.println("\n");
-    Serial.print("analoger Wert 24 Volt: ");
+    Serial.print("\nanaloger Wert 24 Volt: ");
     Serial.print(WertPin24V);
-    Serial.println("\n");
-    Serial.print("\Spannung 24 Volt: ");
+    Serial.print("\nSpannung 24 Volt: ");
     Serial.print(Spannung24V);
-    Serial.println("\n");
+    Serial.print("\n\n");
     vTaskDelay(delay);
+  }
+}
+
+void NTPTask(void *pvParameters) {
+  const TickType_t delay = pdMS_TO_TICKS(IntervallNTP);
+  for(;;) {
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+      Serial.println(&timeinfo, "\n%d.%m.%Y %H:%M:%S Uhr");
+      vTaskDelay(delay);
+    } else {
+      Serial.println("Zeit nicht verfügbar");
+      vTaskDelay(delay);
+    }
   }
 }
 
@@ -304,8 +322,8 @@ void setup() {
   Serial.print("Verbindung zu WLAN: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
-  int max_attempts = 20;
-  while (WiFi.status() != WL_CONNECTED && max_attempts--) {
+
+  while (WiFi.status() != WL_CONNECTED && Verbindungsversuche--) {
     delay(1000);
     Serial.print(".");
   }
@@ -315,6 +333,21 @@ void setup() {
     Serial.println(WiFi.localIP());
   } else {
     Serial.println("\nFehler beim Verbinden");
+  }
+
+  configTime(gmtOffset_sec, daylightOffset_sec, NTP);
+  Serial.println("Warte auf Zeitsynchronisation...");
+  struct tm timeinfo;
+  int retries = 10;
+  while (retries-- > 0) {
+    if (getLocalTime(&timeinfo)) {
+      Serial.println("Zeit synchronisiert");
+      break;
+    }
+    delay(1000);
+  }
+  if (retries <= 0) {
+    Serial.println("Zeit konnte nicht synchronisiert werden");
   }
 
   bme.begin(0x76);
@@ -376,7 +409,7 @@ void setup() {
   digitalWrite(Relais4Pin, HIGH);
 
   Serial.println("Alle Relais ausgeschaltet");
-
+  xTaskCreatePinnedToCore(NTPTask, "NTP_Task", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(bmeTask, "BME280_Task", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(analogTask, "Analog_Task", 4096, NULL, 1, NULL, 1);
 }
