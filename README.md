@@ -12,4 +12,5 @@ Vorsicht Überspannung !
 Benutze einen Spannungsteiler, damit die Spannung am GPIO nicht über 3,3 Volt geht. Vermeide Spannungen von 2.8 Volt oder höher, da die analogen Eingänge des ESP32 bei höheren Spannungen nicht linear sind.
 Das angeschlossene Relaisboard schaltet das Relais mit LOW ein und mit HIGH aus. Bei Nutzung von MOSFETs zum schalten einer Last muss die Logik umgekehrt werden.
 
+![](https://github.com/FredFeuerstein0815/ESP32_analog_read_and_digital_write_with_Webserver_input_Form/blob/main/Spannungsteiler_Beispiel.png)
 ![](https://github.com/FredFeuerstein0815/ESP32_analog_read_and_digital_write_with_Webserver_input_Form/blob/main/analogread_digitalwrite_webserver_form.png)
