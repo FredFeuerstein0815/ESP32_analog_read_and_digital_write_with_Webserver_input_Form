@@ -2,7 +2,7 @@ Mit diesem Script liest ein ESP32 analoge Werte und schaltet, in Abhängigkeit d
 
 Die vorgegebenen Werte lassen sich auf der HTML-Seite des eingebauten Webservers modifizieren. Dort werden auch die aktuellen Spannungen angezeigt.
 
-Die Zeit wird von einem NTP-Server geholt und auch auf der HTML-Seite angezeigt. Der Zeitraum, wie oft sich der ESP32 die Uhrzeit vom NTP-Server holt, ist einstellbar.
+Die Zeit wird von einem NTP-Server geholt und auch auf der HTML-Seite angezeigt. Der Zeitraum, wie oft sich der ESP32 die Uhrzeit vom NTP-Server holt, ist einstellbar, ebenso der refresh der HTML-Seite.
 
 Zudem werden die Werte Temperatur, Luftdruck und Luftfeuchtigkeit eines BME280 ausgelesen und angezeigt.
 
