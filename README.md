@@ -16,3 +16,4 @@ Beispiel eines Spannungsteilers mit empfohlener Eingangsspannung von maximal 15 
 
 ![](https://github.com/FredFeuerstein0815/ESP32_analog_read_and_digital_write_with_Webserver_input_Form/blob/main/Spannungsteiler_Beispiel.png)
 ![](https://github.com/FredFeuerstein0815/ESP32_analog_read_and_digital_write_with_Webserver_input_Form/blob/main/analogread_digitalwrite_webserver_form.png)
+![](https://github.com/FredFeuerstein0815/ESP32_analog_read_and_digital_write_with_Webserver_input_Form/blob/main/ESP32_analogread_digitalwrite_Webserver_NTP_BME280_Smartphone.jpg)
