@@ -6,17 +6,22 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <WiFi.h>
+#include <WiFiAP.h>
 #include <Wire.h>
 
 #include "time.h"
 
 Adafruit_BME280 bme;
 
-IPAddress local_IP(192, 168, 0, 99);
-IPAddress gateway(192, 168, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress primaryDNS(8, 8, 8, 8);
-IPAddress secondaryDNS(8, 8, 4, 4);
+IPAddress Client_IP(192, 168, 0, 99);
+IPAddress Client_gateway(192, 168, 0, 1);
+IPAddress Client_subnet(255, 255, 255, 0);
+IPAddress Client_primaryDNS(8, 8, 8, 8);
+IPAddress Client_secondaryDNS(8, 8, 4, 4);
+
+IPAddress AP_IP(192, 168, 0, 99);
+IPAddress AP_gateway(192, 168, 0, 1);
+IPAddress AP_subnet(255, 255, 255, 0);
 
 AsyncWebServer server(80);
 
@@ -35,7 +40,7 @@ float luftfeuchtigkeit = 0;
 float Spannung12V = 0;
 float Spannung24V = 0;
 
-int Verbindungsversuche = 20;
+int Verbindungsversuche = 5;
 int StatusRelais1 = 0;
 int StatusRelais2 = 0;
 int StatusRelais3 = 0;
@@ -60,8 +65,11 @@ const float umrechnungsfaktor24V = 96.85;
 
 const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
 const char* PARAM_DatumZeit = "DatumZeit";
-const char* ssid = "SSID";
-const char* password = "Geheim";
+const char* Client_ssid = "SSID";
+const char* Client_password = "Client_Geheim";
+const char* Hostname = "ESP32";
+const char* AP_ssid = "AP_SSID";
+const char* AP_password = "AP_Geheim";
 const char* NTP = "de.pool.ntp.org";
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
 const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
@@ -329,10 +337,10 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   WiFi.mode(WIFI_STA);
-  WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS);
+  WiFi.config(Client_IP, Client_gateway, Client_subnet, Client_primaryDNS, Client_secondaryDNS);
   Serial.print("Verbindung zu WLAN: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
+  Serial.println(Client_ssid);
+  WiFi.begin(Client_ssid, Client_password);
 
   while (WiFi.status() != WL_CONNECTED && Verbindungsversuche--) {
     delay(1000);
@@ -343,7 +351,22 @@ void setup() {
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\nFehler beim Verbinden");
+    Serial.println("\nKeine Verbindung zum WLAN, eröffne AP");
+    WiFi.softAP(AP_ssid, AP_password);
+    Serial.print("Konfiguriere AP ... ");
+    Serial.println(WiFi.softAPConfig(AP_IP, AP_gateway, AP_subnet));
+    WiFi.softAPsetHostname(Hostname);
+    Serial.print("Starte AP");
+    Serial.print("AP SSID: ");
+    Serial.println(WiFi.softAPSSID());
+    Serial.print("AP IP: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("AP Hostname: ");
+    Serial.println(WiFi.softAPgetHostname());
+    Serial.print("AP Mac: ");
+    Serial.println(WiFi.softAPmacAddress());
+    Serial.print("AP Subnet: ");
+    Serial.println(WiFi.softAPSubnetCIDR());
   }
 
   bme.begin(0x76);
