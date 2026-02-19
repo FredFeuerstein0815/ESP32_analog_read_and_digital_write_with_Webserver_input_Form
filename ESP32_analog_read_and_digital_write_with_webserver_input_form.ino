@@ -27,9 +27,6 @@ AsyncWebServer server(80);
 
 String DatumZeit;
 
-float temperature_bme = 0;
-float luftdruck_bme = 0;
-float luftfeuchtigkeit_bme = 0;
 float Vorgabe12Van = 14.0;
 float Vorgabe12Vaus = 13.2;
 float Vorgabe24Van = 28.0;
