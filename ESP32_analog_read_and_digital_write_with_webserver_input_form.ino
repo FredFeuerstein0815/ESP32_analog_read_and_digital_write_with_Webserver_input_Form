@@ -66,7 +66,7 @@ const float umrechnungsfaktor24V = 96.85;
 const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
 const char* PARAM_DatumZeit = "DatumZeit";
 const char* Client_ssid = "SSID";
-const char* Client_password = "Client_Geheim";
+const char* Client_password = "Geheim";
 const char* Hostname = "ESP32";
 const char* AP_ssid = "AP_SSID";
 const char* AP_password = "AP_Geheim";
@@ -267,6 +267,7 @@ void notFound(AsyncWebServerRequest *request) {
 void bmeTask(void *pvParameters) {
   const TickType_t delay = pdMS_TO_TICKS(MessintervallBME280);
   for(;;) {
+    vTaskDelay(500);
     temperatur = bme.readTemperature();
     luftdruck = bme.readPressure() / 100.0F; // hPa
     luftfeuchtigkeit = bme.readHumidity();
@@ -319,7 +320,7 @@ void NTPTask(void *pvParameters) {
     int retries = 10;
     while (retries-- > 0) {
     if (getLocalTime(&timeinfo)) {
-      Serial.println("Zeit synchronisiert");
+      Serial.println("\nZeit synchronisiert");
     break;}
     }
     if (retries <= 0) {
@@ -335,7 +336,7 @@ void NTPTask(void *pvParameters) {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(500);
   WiFi.mode(WIFI_STA);
   WiFi.config(Client_IP, Client_gateway, Client_subnet, Client_primaryDNS, Client_secondaryDNS);
   Serial.print("Verbindung zu WLAN: ");
