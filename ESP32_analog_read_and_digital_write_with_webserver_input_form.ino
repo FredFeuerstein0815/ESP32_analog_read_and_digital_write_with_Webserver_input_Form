@@ -44,7 +44,7 @@ int StatusRelais4 = 0;
 int WertPin12V = 0;
 int WertPin24V = 0;
 
-const int daylightOffset_sec = 3600; // 1 Std
+const int DST_Offset_sec = 3600; // 1 Std
 const int MessintervallBatt = 20000; // 20 Sek
 const int MessintervallBME280 = 1800000; // 30 Min
 const int IntervallNTP = 43200000; // 12 Std
@@ -58,7 +58,7 @@ const int Relais4Pin = 27;
 const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 96.85;
 
-const long  gmtOffset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
+const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
 const char* PARAM_DatumZeit = "DatumZeit";
 const char* ssid = "SSID";
 const char* password = "Geheim";
@@ -305,7 +305,7 @@ void analogTask(void *pvParameters) {
 void NTPTask(void *pvParameters) {
   const TickType_t delay = pdMS_TO_TICKS(IntervallNTP);
   for(;;) {
-    configTime(gmtOffset_sec, daylightOffset_sec, NTP);
+    configTime(TZ_Offset_sec, DST_Offset_sec, NTP);
     Serial.println("Warte auf Zeitsynchronisation...");
     struct tm timeinfo;
     int retries = 10;
