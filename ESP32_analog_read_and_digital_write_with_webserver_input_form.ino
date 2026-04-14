@@ -295,17 +295,100 @@ void analogTask(void *pvParameters) {
     Spannung12V = WertPin12V / umrechnungsfaktor12V;
     WertPin24V = analogRead(BattPin24V);
     Spannung24V = WertPin24V / umrechnungsfaktor24V;
-    Serial.print("\nanaloger Wert 12 Volt: ");
-    Serial.print(WertPin12V);
-    Serial.print("\nSpannung 12 Volt:");
-    Serial.print(Spannung12V);
-    Serial.print("\nanaloger Wert 24 Volt: ");
-    Serial.print(WertPin24V);
-    Serial.print("\nSpannung 24 Volt: ");
-    Serial.print(Spannung24V);
+    Serial.println("Auschaltspannung 12 Volt:");
+    Serial.println(Vorgabe12Vaus);
+    Serial.println("Einschaltspannung 12 Volt:");
+    Serial.println(Vorgabe12Van);
+    Serial.println("\nanaloger Wert 12 Volt: ");
+    Serial.println(WertPin12V);
+    Serial.println("\nSpannung 12 Volt:");
+    Serial.println(Spannung12V);
+    String str;
+    if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == LOW) {
+      Serial.println( str + "Spannung über " + Vorgabe12Van + ", Strom ist an und bleibt an.");
+    }
+    else if (Spannung12V <= Vorgabe12Van && Vorgabe12Vaus <= Spannung12V && digitalRead(Relais1Pin) == LOW) {
+      Serial.println( str + "Spannung unter " + Vorgabe12Van + ", aber über " + Vorgabe12Vaus + ", Strom ist an und bleibt an.");
+    }
+    else if (Spannung12V <= Vorgabe12Vaus && digitalRead(Relais1Pin) == LOW) {
+      Serial.println( str + "Spannung ist unter " + Vorgabe12Vaus + "und Strom ist noch an, schalte Strom aus.");
+      Relais1und2aus();
+    }
+    else if (Spannung12V >= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
+      Serial.println( str + "Spannung über " + Vorgabe12Vaus + " aber unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
+    }
+    else if (Spannung12V <= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
+      Serial.println( str + "Spannung unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
+    }
+    else if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
+      Serial.println( str + "Spannung über " + Vorgabe12Van + ", Strom ist aus, schalte Strom ein.");
+      Relais1und2an();
+    }
+    else {
+      Serial.println("Fehler beim Zugriff auf GPIOs");
+    }
+    Serial.println("Auschaltspannung 24 Volt:");
+    Serial.println(Vorgabe24Vaus);
+    Serial.println("Einschaltspannung 24 Volt:");
+    Serial.println(Vorgabe24Van);
+    Serial.println("\nanaloger Wert 24 Volt: ");
+    Serial.println(WertPin24V);
+    Serial.println("\nSpannung 24 Volt: ");
+    Serial.println(Spannung24V);
+        if (Spannung24V >= Vorgabe24Van && digitalRead(Relais3Pin) == LOW) {
+      Serial.println( str + "Spannung über " + Vorgabe24Van + ", Strom ist an und bleibt an.");
+    }
+    else if (Spannung24V <= Vorgabe24Van && Vorgabe24Vaus <= Spannung24V && digitalRead(Relais3Pin) == LOW) {
+      Serial.println( str + "Spannung unter " + Vorgabe24Van + "ein, aber über Vorgabe24Vaus, Strom ist an und bleibt an.");
+    }
+    else if (Spannung24V <= Vorgabe24Vaus && digitalRead(Relais3Pin) == LOW) {
+      Serial.println( str + "Spannung unter " + Vorgabe24Vaus + " und Strom ist noch an, schalte Strom aus");
+      Relais3und4aus();
+    }
+    else if (Spannung24V >= Vorgabe24Vaus && Spannung24V <= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
+      Serial.println( str + "Spannung über " + Vorgabe24Vaus + "aber unter Vorgabe24Van, Strom ist aus und bleibt aus.");
+    }
+    else if (Spannung24V <= Vorgabe24Vaus && Spannung24V <= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
+      Serial.println( str + "Spannung unter " + Vorgabe24Vaus + ", Strom ist aus und bleibt aus.");
+    }
+    else if (Spannung24V >= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
+      Serial.println( str + "Spannung über " + Vorgabe24Van + ", Strom ist aus, schalte Strom ein.");
+      Relais3und4an();
+    }
+    else {
+      Serial.println("Fehler beim Zugriff auf GPIOs");
+    }
     Serial.print("\n\n");
     vTaskDelay(delay);
   }
+}
+
+void Relais1und2an() {
+  pinMode(Relais1Pin, OUTPUT);
+  pinMode(Relais2Pin, OUTPUT);
+  digitalWrite(Relais1Pin, LOW);
+  digitalWrite(Relais2Pin, LOW);
+}
+
+void Relais1und2aus() {
+  pinMode(Relais1Pin, OUTPUT);
+  pinMode(Relais2Pin, OUTPUT);
+  digitalWrite(Relais1Pin, HIGH);
+  digitalWrite(Relais2Pin, HIGH);
+}
+
+void Relais3und4an() {
+  pinMode(Relais3Pin, OUTPUT);
+  pinMode(Relais4Pin, OUTPUT);
+  digitalWrite(Relais3Pin, LOW);
+  digitalWrite(Relais4Pin, LOW);
+}
+
+void Relais3und4aus() {
+  pinMode(Relais3Pin, OUTPUT);
+  pinMode(Relais4Pin, OUTPUT);
+  digitalWrite(Relais3Pin, HIGH);
+  digitalWrite(Relais4Pin, HIGH);
 }
 
 void NTPTask(void *pvParameters) {
