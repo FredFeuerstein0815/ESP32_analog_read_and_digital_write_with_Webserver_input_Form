@@ -295,64 +295,48 @@ void analogTask(void *pvParameters) {
     Spannung12V = WertPin12V / umrechnungsfaktor12V;
     WertPin24V = analogRead(BattPin24V);
     Spannung24V = WertPin24V / umrechnungsfaktor24V;
-    Serial.println("Auschaltspannung 12 Volt:");
-    Serial.println(Vorgabe12Vaus);
-    Serial.println("Einschaltspannung 12 Volt:");
-    Serial.println(Vorgabe12Van);
-    Serial.println("\nanaloger Wert 12 Volt: ");
-    Serial.println(WertPin12V);
-    Serial.println("\nSpannung 12 Volt:");
-    Serial.println(Spannung12V);
     String str;
     if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == LOW) {
-      Serial.println( str + "Spannung über " + Vorgabe12Van + ", Strom ist an und bleibt an.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Van + ", Strom ist an und bleibt an.");
     }
     else if (Spannung12V <= Vorgabe12Van && Vorgabe12Vaus <= Spannung12V && digitalRead(Relais1Pin) == LOW) {
-      Serial.println( str + "Spannung unter " + Vorgabe12Van + ", aber über " + Vorgabe12Vaus + ", Strom ist an und bleibt an.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ",also unter " + Vorgabe12Van + ", aber über " + Vorgabe12Vaus + ", Strom ist an und bleibt an.");
     }
     else if (Spannung12V <= Vorgabe12Vaus && digitalRead(Relais1Pin) == LOW) {
-      Serial.println( str + "Spannung ist unter " + Vorgabe12Vaus + "und Strom ist noch an, schalte Strom aus.");
+      Serial.println( str + "Spannung ist " + Spannung12V + "ist also unter " + Vorgabe12Vaus + "und Strom ist noch an, schalte Strom aus.");
       Relais1und2aus();
     }
     else if (Spannung12V >= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
-      Serial.println( str + "Spannung über " + Vorgabe12Vaus + " aber unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Vaus + " aber unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V <= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
-      Serial.println( str + "Spannung unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ", also unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
-      Serial.println( str + "Spannung über " + Vorgabe12Van + ", Strom ist aus, schalte Strom ein.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Van + ", Strom ist aus, schalte Strom ein.");
       Relais1und2an();
     }
     else {
       Serial.println("Fehler beim Zugriff auf GPIOs");
     }
-    Serial.println("Auschaltspannung 24 Volt:");
-    Serial.println(Vorgabe24Vaus);
-    Serial.println("Einschaltspannung 24 Volt:");
-    Serial.println(Vorgabe24Van);
-    Serial.println("\nanaloger Wert 24 Volt: ");
-    Serial.println(WertPin24V);
-    Serial.println("\nSpannung 24 Volt: ");
-    Serial.println(Spannung24V);
         if (Spannung24V >= Vorgabe24Van && digitalRead(Relais3Pin) == LOW) {
-      Serial.println( str + "Spannung über " + Vorgabe24Van + ", Strom ist an und bleibt an.");
+      Serial.println( str + "Spannung ist " + Spannung24V + ",also über " + Vorgabe24Van + ", Strom ist an und bleibt an.");
     }
     else if (Spannung24V <= Vorgabe24Van && Vorgabe24Vaus <= Spannung24V && digitalRead(Relais3Pin) == LOW) {
-      Serial.println( str + "Spannung unter " + Vorgabe24Van + "ein, aber über Vorgabe24Vaus, Strom ist an und bleibt an.");
+      Serial.println( str + "Spannung ist " + Spannung24V + ",also unter " + Vorgabe24Van + ", aber über " + Vorgabe24Vaus + ", Strom ist an und bleibt an.");
     }
     else if (Spannung24V <= Vorgabe24Vaus && digitalRead(Relais3Pin) == LOW) {
-      Serial.println( str + "Spannung unter " + Vorgabe24Vaus + " und Strom ist noch an, schalte Strom aus");
+      Serial.println( str + "Spannung ist " + Spannung24V + ", also unter " + Vorgabe24Vaus + " und Strom ist noch an, schalte Strom aus");
       Relais3und4aus();
     }
     else if (Spannung24V >= Vorgabe24Vaus && Spannung24V <= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
-      Serial.println( str + "Spannung über " + Vorgabe24Vaus + "aber unter Vorgabe24Van, Strom ist aus und bleibt aus.");
+      Serial.println( str + "Spannung ist " + Spannung24V + ",also über " + Vorgabe24Vaus + "aber unter " + Vorgabe24Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung24V <= Vorgabe24Vaus && Spannung24V <= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
-      Serial.println( str + "Spannung unter " + Vorgabe24Vaus + ", Strom ist aus und bleibt aus.");
+      Serial.println( str + "Spannung ist " + Spannung24V + ", also unter " + Vorgabe24Vaus + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung24V >= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
-      Serial.println( str + "Spannung über " + Vorgabe24Van + ", Strom ist aus, schalte Strom ein.");
+      Serial.println( str + "Spannung ist " + Spannung24V + ", also über " + Vorgabe24Van + ", Strom ist aus, schalte Strom ein.");
       Relais3und4an();
     }
     else {
