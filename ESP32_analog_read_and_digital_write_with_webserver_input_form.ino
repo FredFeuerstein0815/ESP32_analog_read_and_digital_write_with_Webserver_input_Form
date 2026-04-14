@@ -38,10 +38,10 @@ float Spannung12V = 0;
 float Spannung24V = 0;
 
 int Verbindungsversuche = 5;
-int StatusRelais1 = 0;
-int StatusRelais2 = 0;
-int StatusRelais3 = 0;
-int StatusRelais4 = 0;
+String StatusRelais1;
+String StatusRelais2;
+String StatusRelais3;
+String StatusRelais4;
 
 int WertPin12V = 0;
 int WertPin24V = 0;
@@ -77,6 +77,10 @@ const char* PARAM_Luftdruck = "luftdruck";
 const char* PARAM_Luftfeuchtigkeit = "luftfeuchtigkeit";
 const char* PARAM_Spannung12V = "Spannung12V";
 const char* PARAM_Spannung24V = "Spannung24V";
+const char* PARAM_StatusRelais1 = "StatusRelais1";
+const char* PARAM_StatusRelais2 = "StatusRelais2";
+const char* PARAM_StatusRelais3 = "StatusRelais3";
+const char* PARAM_StatusRelais4 = "StatusRelais4";
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -113,13 +117,13 @@ const char index_html[] PROGMEM = R"rawliteral(
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">12 Volt</td>
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">12 Volt %StatusRelais1%</td>
     <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Spannung12V% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
   <tr>
     <td style="width:4%; border:1px solid grey;">
-    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">24 Volt</td>
+    <td style="width:auto; font-size:20px;text-align: center; border:1px solid grey;">24 Volt %StatusRelais3%</td>
     <td style="width:auto; font-size:20px;text-align: left; border:1px solid grey;">%Spannung24V% Volt</td>
     <td style="width:5%; border:1px solid grey;">
   </tr>
@@ -254,6 +258,8 @@ String processor(const String& var){
   if(var == "luftfeuchtigkeit"){ return String(luftfeuchtigkeit); }
   if(var == "Spannung12V"){ return String(Spannung12V); }
   if(var == "Spannung24V"){ return String(Spannung24V); }
+  if(var == "StatusRelais1"){ return String(StatusRelais1); }
+  if(var == "StatusRelais3"){ return String(StatusRelais3); }  
   return String();
 }
 
@@ -351,28 +357,36 @@ void Relais1und2an() {
   pinMode(Relais1Pin, OUTPUT);
   pinMode(Relais2Pin, OUTPUT);
   digitalWrite(Relais1Pin, LOW);
+  StatusRelais1 = "an";
   digitalWrite(Relais2Pin, LOW);
+  StatusRelais2 = "an";
 }
 
 void Relais1und2aus() {
   pinMode(Relais1Pin, OUTPUT);
   pinMode(Relais2Pin, OUTPUT);
   digitalWrite(Relais1Pin, HIGH);
+  StatusRelais1 = "aus";
   digitalWrite(Relais2Pin, HIGH);
+  StatusRelais2 = "aus";
 }
 
 void Relais3und4an() {
   pinMode(Relais3Pin, OUTPUT);
   pinMode(Relais4Pin, OUTPUT);
   digitalWrite(Relais3Pin, LOW);
+  StatusRelais3 = "an";
   digitalWrite(Relais4Pin, LOW);
+  StatusRelais4 = "an";
 }
 
 void Relais3und4aus() {
   pinMode(Relais3Pin, OUTPUT);
   pinMode(Relais4Pin, OUTPUT);
   digitalWrite(Relais3Pin, HIGH);
+  StatusRelais3 = "aus";
   digitalWrite(Relais4Pin, HIGH);
+  StatusRelais4 = "aus";
 }
 
 void NTPTask(void *pvParameters) {
@@ -447,6 +461,8 @@ void setup() {
     htmlResponse.replace("%luftfeuchtigkeit%", String(luftfeuchtigkeit));
     htmlResponse.replace("%Spannung12V%", String(Spannung12V));
     htmlResponse.replace("%Spannung24V%", String(Spannung24V));
+    htmlResponse.replace("%StatusRelais1%", String(StatusRelais1));
+    htmlResponse.replace("%StatusRelais3%", String(StatusRelais3));
     request->send(200, "text/html", htmlResponse);
   });
 
@@ -481,6 +497,12 @@ void setup() {
     if(request->hasParam(PARAM_Spannung24V)){
       Spannung24V = request->getParam(PARAM_Spannung24V)->value().toFloat();
     }
+    if(request->hasParam(PARAM_StatusRelais1)){
+      StatusRelais1 = request->getParam(PARAM_StatusRelais1)->value();
+    }
+    if(request->hasParam(PARAM_StatusRelais3)){
+      StatusRelais3 = request->getParam(PARAM_StatusRelais3)->value();
+    }
     request->send(200, "text/plain", "OK");
   });
 
@@ -491,10 +513,8 @@ void setup() {
   pinMode(Relais2Pin, OUTPUT);
   pinMode(Relais3Pin, OUTPUT);
   pinMode(Relais4Pin, OUTPUT);
-  digitalWrite(Relais1Pin, HIGH);
-  digitalWrite(Relais2Pin, HIGH);
-  digitalWrite(Relais3Pin, HIGH);
-  digitalWrite(Relais4Pin, HIGH);
+  Relais1und2aus();
+  Relais3und4aus();
 
   Serial.println("Alle Relais ausgeschaltet");
   xTaskCreatePinnedToCore(NTPTask, "NTP_Task", 4096, NULL, 1, NULL, 0);
