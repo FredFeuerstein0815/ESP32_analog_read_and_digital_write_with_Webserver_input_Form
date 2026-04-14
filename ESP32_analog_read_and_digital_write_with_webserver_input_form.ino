@@ -316,7 +316,7 @@ void analogTask(void *pvParameters) {
       Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Vaus + " aber unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V <= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
-      Serial.println( str + "Spannung ist " + Spannung12V + ", also unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
+      Serial.println( str + "Spannung ist " + Spannung12V + ", also unter " + Vorgabe12Vaus + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
       Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Van + ", Strom ist aus, schalte Strom ein.");
