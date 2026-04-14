@@ -1,6 +1,7 @@
 Mit diesem Script liest ein ESP32 analoge Werte und schaltet, in Abhängigkeit dieser Werte, GPIOs an oder aus.
+
 In meinem Fall ist ein Relaisboard verbaut, welches die Relais mit LOW anschaltet und mit HIGH ausschaltet.
-Bei Ansteuerung mittels N-MOSFET muss die Logik umgekehrt werden.
+Bei Ansteuerung mittels N-MOSFETs muss die Logik umgekehrt werden.
 
 Sollte kein WLAN erreichbar sein, eröffnet der ESP32 einen Access Point.
 
