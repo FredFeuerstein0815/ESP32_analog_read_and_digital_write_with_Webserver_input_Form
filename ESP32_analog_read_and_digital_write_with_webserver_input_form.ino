@@ -52,10 +52,10 @@ const int MessintervallBME280 = 1800000; // 30 Min
 const int IntervallNTP = 43200000; // 12 Std
 const int BattPin12V = 36;
 const int BattPin24V = 39;
-const int Relais1Pin = 13;
-const int Relais2Pin = 12;
-const int Relais3Pin = 14;
-const int Relais4Pin = 27;
+const int Relais1Pin = 14;
+const int Relais2Pin = 27;
+const int Relais3Pin = 26;
+const int Relais4Pin = 25;
 
 const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 96.85;
