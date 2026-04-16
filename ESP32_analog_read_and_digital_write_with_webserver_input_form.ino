@@ -46,10 +46,10 @@ String StatusRelais4;
 int WertPin12V = 0;
 int WertPin24V = 0;
 
-const int DST_Offset_sec = 3600; // 1 Std
-const int MessintervallBatt = 20000; // 20 Sek
-const int MessintervallBME280 = 1800000; // 30 Min
-const int IntervallNTP = 42000000; // Max. 42949672 sonst Overflow
+const int DST_Offset_sec = 3600; // 1 Std.
+const int MessintervallBatt = 20000; // 20 Sek.
+const int MessintervallBME280 = 1800000; // 30 Min.
+const int IntervallNTP = 42000000; // 11 Std 40 Min. #Max 42949672 sonst Overflow
 const int BattPin12V = 36;
 const int BattPin24V = 39;
 const int Relais1Pin = 14;
