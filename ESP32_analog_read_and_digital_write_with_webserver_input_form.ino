@@ -57,7 +57,7 @@ const uint32_t IntervallNTP = 42000000; // 11 Std 40 Minuten, absolutes Maximum 
 
 const int httpsPort = 443;
 const int DST_Offset_sec = 3600; // 1 Std
-const int MessintervallBatt = 200000;  // 20 Sek
+const int MessintervallBatt = 20000;  // 20 Sek
 const int MessintervallBME280 = 1800000; // 30 Min
 const int BattPin12V = 36;
 const int BattPin24V = 39;
