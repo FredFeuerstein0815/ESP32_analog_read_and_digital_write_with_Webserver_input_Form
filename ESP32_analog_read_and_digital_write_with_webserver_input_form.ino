@@ -70,9 +70,9 @@ const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 96.85;
 
 const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
-//const char* uploadserver = "meine-domain.de";
-const char* uploadserver = "192.168.0.10";
-const char* apiKey = "Geheim";
+//const char* uploadserver = "meine-domain.de"; // meine-domain.de oder
+const char* uploadserver = "192.168.0.10"; // IP des Hosts
+const char* apiKey = "Geheim"; // derselbe apiKey muss in der upload_esp32.php eingetragen sein
 const char* PARAM_DatumZeit = "DatumZeit";
 const char* Client_ssid = "SSID";
 const char* Client_password = "Geheim";
