@@ -7,6 +7,9 @@
 #include <freertos/task.h>
 #include <WiFi.h>
 #include <WiFiAP.h>
+
+#include <WiFiClientSecure.h>
+
 #include <Wire.h>
 
 #include "time.h"
@@ -26,11 +29,15 @@ IPAddress AP_subnet(255, 255, 255, 0);
 AsyncWebServer server(80);
 
 String DatumZeit;
+String payload_esp32;
 
-float Vorgabe12Van = 14.0;
-float Vorgabe12Vaus = 13.2;
-float Vorgabe24Van = 28.0;
-float Vorgabe24Vaus = 26.4;
+float temperature_bme = 0;
+float luftdruck_bme = 0;
+float luftfeuchtigkeit_bme = 0;
+float Vorgabe12Van = 13.8;
+float Vorgabe12Vaus = 12.5;
+float Vorgabe24Van = 27.2;
+float Vorgabe24Vaus = 25.8;
 float temperatur = 0;
 float luftdruck = 0;
 float luftfeuchtigkeit = 0;
@@ -46,10 +53,12 @@ String StatusRelais4;
 int WertPin12V = 0;
 int WertPin24V = 0;
 
-const int DST_Offset_sec = 3600; // 1 Std.
-const int MessintervallBatt = 20000; // 20 Sek.
-const int MessintervallBME280 = 1800000; // 30 Min.
-const int IntervallNTP = 42000000; // 11 Std 40 Min. #Max 42949672 sonst Overflow
+const uint32_t IntervallNTP = 42000000; // 11 Std 40 Minuten, absolutes Maximum = 42949672 sonst Overflow
+
+const int httpsPort = 443;
+const int DST_Offset_sec = 3600; // 1 Std
+const int MessintervallBatt = 200000;  // 20 Sek
+const int MessintervallBME280 = 1800000; // 30 Min
 const int BattPin12V = 36;
 const int BattPin24V = 39;
 const int Relais1Pin = 14;
@@ -61,6 +70,9 @@ const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 96.85;
 
 const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
+//const char* uploadserver = "meine-domain.de";
+const char* uploadserver = "192.168.0.10";
+const char* apiKey = "Geheim";
 const char* PARAM_DatumZeit = "DatumZeit";
 const char* Client_ssid = "SSID";
 const char* Client_password = "Geheim";
@@ -259,13 +271,46 @@ String processor(const String& var){
   if(var == "Spannung12V"){ return String(Spannung12V); }
   if(var == "Spannung24V"){ return String(Spannung24V); }
   if(var == "StatusRelais1"){ return String(StatusRelais1); }
-  if(var == "StatusRelais3"){ return String(StatusRelais3); }  
+  if(var == "StatusRelais3"){ return String(StatusRelais3); }
   return String();
 }
 
 void notFound(AsyncWebServerRequest *request) {
   request->send(404, "text/plain", "404: Not found");
 }
+
+void uploadzumserver(){
+  WiFiClientSecure client;
+  client.setInsecure();
+  Serial.println("Verbinde zu HTTPS...");
+  if (!client.connect(uploadserver, httpsPort)) {
+    Serial.println("Verbindung fehlgeschlagen!");
+    return;
+  }
+  Serial.println("Verbunden. Sende Daten...");
+  String request =
+    "POST /dir/esp32/upload_esp32.php?key=" + String(apiKey) + " HTTP/1.1\r\n" +
+    "Host: meine-domain.de\r\n" +
+    "Content-Type: text/plain\r\n" +
+    "Content-Length: " + String(payload_esp32.length()) + "\r\n" +
+    "Connection: close\r\n\r\n" +
+    payload_esp32;
+  Serial.print("Payload, der gesendet wird: >");
+  Serial.print(payload_esp32);
+  Serial.print("<");
+  Serial.print("Payload Länge: ");
+  Serial.println(payload_esp32.length());
+  client.print(request);
+  Serial.println("Warte auf Antwort...");
+  while (client.connected() || client.available()) {
+    if (client.available()) {
+      Serial.println(client.readStringUntil('\n'));
+    }
+  }
+  client.stop();
+  Serial.println("Fertig.");
+}
+
 
 void bmeTask(void *pvParameters) {
   const TickType_t delay = pdMS_TO_TICKS(MessintervallBME280);
@@ -290,6 +335,8 @@ void bmeTask(void *pvParameters) {
     String tempString = String(tempchar);
     String druckString = String(druckchar);
     String feuchtString = String(feuchtchar);
+    payload_esp32 = String(tempchar) + ";" + String(druckchar) + ";" + String(feuchtchar) + ";" + String(Spannung12V) + ";" + String(Spannung24V) + ";" + String(StatusRelais1) + ";" + String(StatusRelais3) + "\n";
+    uploadzumserver();
     vTaskDelay(delay);
   }
 }
@@ -508,14 +555,13 @@ void setup() {
 
   server.onNotFound(notFound);
   server.begin();
-
+  Serial.println("Programmstart, schalte alle Relais aus.");
   pinMode(Relais1Pin, OUTPUT);
   pinMode(Relais2Pin, OUTPUT);
   pinMode(Relais3Pin, OUTPUT);
   pinMode(Relais4Pin, OUTPUT);
   Relais1und2aus();
   Relais3und4aus();
-
   Serial.println("Alle Relais ausgeschaltet");
   xTaskCreatePinnedToCore(NTPTask, "NTP_Task", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(bmeTask, "BME280_Task", 4096, NULL, 1, NULL, 0);
