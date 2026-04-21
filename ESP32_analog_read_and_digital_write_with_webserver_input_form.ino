@@ -16,9 +16,17 @@
 
 Adafruit_BME280 bme;
 
-IPAddress Client_IP(192, 168, 0, 99);
-IPAddress Client_gateway(192, 168, 0, 1);
-IPAddress Client_subnet(255, 255, 255, 0);
+bool apMode = false;
+bool bmeAvailable = false;
+
+unsigned long letzterVerbindungsversuch = 0;
+
+IPAddress Client1_IP(192, 168, 0, 99);
+IPAddress Client1_gateway(192, 168, 0, 1);
+IPAddress Client1_subnet(255, 255, 255, 0);
+IPAddress Client2_IP(192, 168, 178, 99);
+IPAddress Client2_gateway(192, 168, 178, 1);
+IPAddress Client2_subnet(255, 255, 255, 0);
 IPAddress Client_primaryDNS(8, 8, 8, 8);
 IPAddress Client_secondaryDNS(8, 8, 4, 4);
 
@@ -44,7 +52,6 @@ float luftfeuchtigkeit = 0;
 float Spannung12V = 0;
 float Spannung24V = 0;
 
-int Verbindungsversuche = 5;
 String StatusRelais1;
 String StatusRelais2;
 String StatusRelais3;
@@ -54,6 +61,8 @@ int WertPin12V = 0;
 int WertPin24V = 0;
 
 const uint32_t IntervallNTP = 42000000; // 11 Std 40 Minuten, absolutes Maximum = 42949672 sonst Overflow
+
+const unsigned long checkIntervall = 600000UL; // 10 Minuten
 
 const int httpsPort = 443;
 const int DST_Offset_sec = 3600; // 1 Std
@@ -65,20 +74,22 @@ const int Relais1Pin = 14;
 const int Relais2Pin = 27;
 const int Relais3Pin = 26;
 const int Relais4Pin = 25;
+const int anzahlWLANs = 2;
 
 const float umrechnungsfaktor12V = 174.867;
 const float umrechnungsfaktor24V = 96.85;
 
 const long  TZ_Offset_sec = 3600; //GMT OFFSET DE +1Std (3600 SEC)
-//const char* uploadserver = "meine-domain.de"; // meine-domain.de oder
-const char* uploadserver = "192.168.0.10"; // IP des Hosts
-const char* apiKey = "Geheim"; // derselbe apiKey muss in der upload_esp32.php eingetragen sein
+
+const char* ssids[]     = {"WLAN1", "WLAN2"};
+const char* passwords[] = {"geheim1", "geheim2"};
+const char* uploadserver = "meine-domain.de";
+//const char* uploadserver = "192.168.0.10";
+const char* apiKey = "GEHEIM";
 const char* PARAM_DatumZeit = "DatumZeit";
-const char* Client_ssid = "SSID";
-const char* Client_password = "Geheim";
 const char* Hostname = "ESP32";
-const char* AP_ssid = "AP_SSID";
-const char* AP_password = "AP_Geheim";
+const char* AP_ssid = "ESP32";
+const char* AP_password = "geheim";
 const char* NTP = "de.pool.ntp.org";
 const char* PARAM_FLOAT12Van = "Vorgabe12Van";
 const char* PARAM_FLOAT12Vaus = "Vorgabe12Vaus";
@@ -282,9 +293,9 @@ void notFound(AsyncWebServerRequest *request) {
 void uploadzumserver(){
   WiFiClientSecure client;
   client.setInsecure();
-  Serial.println("Verbinde zu HTTPS...");
+  Serial.println("Verbinde zum Uploadserver...");
   if (!client.connect(uploadserver, httpsPort)) {
-    Serial.println("Verbindung fehlgeschlagen!");
+    Serial.println("Verbindung zum Uploadserver fehlgeschlagen!");
     return;
   }
   Serial.println("Verbunden. Sende Daten...");
@@ -311,18 +322,33 @@ void uploadzumserver(){
   Serial.println("Fertig.");
 }
 
-
 void bmeTask(void *pvParameters) {
   const TickType_t delay = pdMS_TO_TICKS(MessintervallBME280);
   for(;;) {
     vTaskDelay(500);
-    temperatur = bme.readTemperature();
-    luftdruck = bme.readPressure() / 100.0F; // hPa
-    luftfeuchtigkeit = bme.readHumidity();
+    float t, p, h;
+    if (bmeAvailable) {
+      t = bme.readTemperature();
+      p = bme.readPressure() / 100.0F;
+      h = bme.readHumidity();
+      if (isnan(t) || isnan(p) || isnan(h)) {
+        Serial.println("Falsche BME280-Daten, nutze Standard-Werte");
+        t = 22.22;
+        p = 999.99;
+        h = 55.55;
+      }
+    } else {
+      t = 22.22;
+      p = 999.99;
+      h = 55.55;
+    }
+    temperatur = t;
+    luftdruck = p;
+    luftfeuchtigkeit = h;
     char tempchar[8], druckchar[8], feuchtchar[8];
-    dtostrf(temperatur, 1, 2, tempchar);
-    dtostrf(luftdruck, 1, 2, druckchar);
-    dtostrf(luftfeuchtigkeit, 1, 2, feuchtchar);
+    dtostrf(t, 1, 2, tempchar);
+    dtostrf(p, 1, 2, druckchar);
+    dtostrf(h, 1, 2, feuchtchar);
     Serial.print("\nTemperatur : ");
     Serial.print(tempchar);
     Serial.print(" °C\n");
@@ -332,10 +358,14 @@ void bmeTask(void *pvParameters) {
     Serial.print("Luftfeuchtigkeit : ");
     Serial.print(feuchtchar);
     Serial.print(" %\n");
-    String tempString = String(tempchar);
-    String druckString = String(druckchar);
-    String feuchtString = String(feuchtchar);
-    payload_esp32 = String(tempchar) + ";" + String(druckchar) + ";" + String(feuchtchar) + ";" + String(Spannung12V) + ";" + String(Spannung24V) + ";" + String(StatusRelais1) + ";" + String(StatusRelais3) + "\n";
+    payload_esp32 =
+      String(tempchar) + ";" +
+      String(druckchar) + ";" +
+      String(feuchtchar) + ";" +
+      String(Spannung12V) + ";" +
+      String(Spannung24V) + ";" +
+      String(StatusRelais1) + ";" +
+      String(StatusRelais3) + "\n";
     uploadzumserver();
     vTaskDelay(delay);
   }
@@ -363,7 +393,7 @@ void analogTask(void *pvParameters) {
       Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Vaus + " aber unter " + Vorgabe12Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V <= Vorgabe12Vaus && Spannung12V <= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
-      Serial.println( str + "Spannung ist " + Spannung12V + ", also unter " + Vorgabe12Vaus + ", Strom ist aus und bleibt aus.");
+//      Serial.println( str + "Spannung ist " + Spannung12V + ", also unter " + Vorgabe12Vaus + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung12V >= Vorgabe12Van && digitalRead(Relais1Pin) == HIGH) {
       Serial.println( str + "Spannung ist " + Spannung12V + ", also über " + Vorgabe12Van + ", Strom ist aus, schalte Strom ein.");
@@ -386,7 +416,7 @@ void analogTask(void *pvParameters) {
       Serial.println( str + "Spannung ist " + Spannung24V + ",also über " + Vorgabe24Vaus + "aber unter " + Vorgabe24Van + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung24V <= Vorgabe24Vaus && Spannung24V <= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
-      Serial.println( str + "Spannung ist " + Spannung24V + ", also unter " + Vorgabe24Vaus + ", Strom ist aus und bleibt aus.");
+//      Serial.println( str + "Spannung ist " + Spannung24V + ", also unter " + Vorgabe24Vaus + ", Strom ist aus und bleibt aus.");
     }
     else if (Spannung24V >= Vorgabe24Van && digitalRead(Relais3Pin) == HIGH) {
       Serial.println( str + "Spannung ist " + Spannung24V + ", also über " + Vorgabe24Van + ", Strom ist aus, schalte Strom ein.");
@@ -437,65 +467,167 @@ void Relais3und4aus() {
 }
 
 void NTPTask(void *pvParameters) {
-  const TickType_t delay = pdMS_TO_TICKS(IntervallNTP);
+  const TickType_t ntpDelay = pdMS_TO_TICKS(IntervallNTP);
   for(;;) {
-    configTime(TZ_Offset_sec, DST_Offset_sec, NTP);
-    Serial.println("Warte auf Zeitsynchronisation...");
     struct tm timeinfo;
-    int retries = 10;
-    while (retries-- > 0) {
-    if (getLocalTime(&timeinfo)) {
-      Serial.println("\nZeit synchronisiert");
-    break;}
+    bool validTime = false;
+    if (WiFi.status() == WL_CONNECTED) {
+      // NTP nur versuchen, wenn WLAN da ist
+      configTime(TZ_Offset_sec, DST_Offset_sec, NTP);
+      Serial.println("Warte auf Zeitsynchronisation...");
+      int retries = 10;
+      while (retries-- > 0) {
+        if (getLocalTime(&timeinfo)) {
+          Serial.println("Zeit synchronisiert");
+          validTime = true;
+          break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+      }
     }
-    if (retries <= 0) {
-      Serial.println("Zeit konnte nicht synchronisiert werden");
+    if (!validTime) {
+      Serial.println("Keine NTP-Zeit, setze eigene Zeit");
+      timeinfo.tm_year = 2026 - 1900;
+      timeinfo.tm_mon  = 0;
+      timeinfo.tm_mday = 1;
+      timeinfo.tm_hour = 12;
+      timeinfo.tm_min  = 0;
+      timeinfo.tm_sec  = 0;
+      time_t t = mktime(&timeinfo);
+      struct timeval now = { .tv_sec = t };
+      settimeofday(&now, NULL);
     }
     char timeStringBuff[20];
     strftime(timeStringBuff, sizeof(timeStringBuff), "%d.%m.%y %H:%M:%S", &timeinfo);
     DatumZeit = String(timeStringBuff);
     Serial.println(DatumZeit);
-    vTaskDelay(delay);
+    vTaskDelay(ntpDelay);
   }
+}
+
+void verbindungsversuch() {
+
+  if (!apMode && WiFi.status() == WL_CONNECTED) {
+    if (millis() - letzterVerbindungsversuch > checkIntervall) {
+      letzterVerbindungsversuch = millis();
+      Serial.println("WLAN ist noch verbunden.");
+    }
+    return;
+  }
+  if (!apMode && WiFi.status() != WL_CONNECTED) {
+    Serial.println("WLAN verloren, versuche 1 Minute lang wieder zu verbinden...");
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 60000) {
+      if (verbindungWLAN()) return;
+    }
+    Serial.println("Verbindung zum WLAN fehlgeschlagen fehlgeschlagen, starte AP");
+    starteAP();
+    return;
+  }
+  if (apMode && millis() - letzterVerbindungsversuch > checkIntervall) {
+    letzterVerbindungsversuch = millis();
+    Serial.println("AP ist noch aktiv, prüfe, ob WLAN wieder verfügbar ist...");
+    stoppeAP();
+    if (!verbindungWLAN()) {
+      Serial.println("Kein WLAN erreichbar, starte AP");
+      starteAP();
+    }
+  }
+}
+
+bool verbindungWLAN() {
+  Serial.println("WLAN-Stack wird neu gestartet...");
+  WiFi.disconnect();
+  delay(1000);
+  WiFi.mode(WIFI_OFF);
+  delay(1000);
+  WiFi.mode(WIFI_STA);
+  delay(1000);
+  for (int i = 0; i < anzahlWLANs; i++) {
+    const char* ssid = ssids[i];
+    const char* pass = passwords[i];
+    Serial.printf("SSID: %s\n", ssid);
+    Serial.printf("Passwort: %s\n", pass);
+    if (strcmp(ssid, "WLAN1") == 0) {
+      Serial.println("Setze IP für WLAN1");
+      WiFi.config(Client1_IP, Client1_gateway, Client1_subnet,
+                  Client_primaryDNS, Client_secondaryDNS);
+    }
+    else if (strcmp(ssid, "WLAN2") == 0) {
+      Serial.println("Setze IP für WLAN2");
+      WiFi.config(Client2_IP, Client2_gateway, Client2_subnet,
+                  Client_primaryDNS, Client_secondaryDNS);
+    }
+    else {
+      Serial.println("Unbekannte SSID, nutze DHCP");
+      WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);  // DHCP
+    }
+    WiFi.begin(ssid, pass);
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+      Serial.print(".");
+      delay(500);
+    }
+    Serial.println();
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.print("Verbunden, IP: ");
+      Serial.println(WiFi.localIP());
+      return true;
+    }
+    Serial.println("Verbindungsversuch fehlgeschlagen, probiere nächstes WLAN...");
+    WiFi.disconnect();
+    delay(1000);
+  }
+  return false;
+}
+
+
+void starteAP() {
+  Serial.println("Starte AP...");
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(AP_ssid, AP_password);
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
+  apMode = true;
+  Serial.println("AP gestartet.");
+}
+
+void stoppeAP() {
+  if (apMode) {
+    Serial.println("Stoppe AP...");
+    WiFi.softAPdisconnect(true);
+    delay(500);
+    apMode = false;
+    Serial.println("AP gestoppt.");
+  }
+}
+
+void resetWLAN() {
+  Serial.println("WLAN wird zurückgesetzt...");
+  WiFi.disconnect();
+  delay(500);
+  WiFi.mode(WIFI_OFF);
+  delay(500);
+  WiFi.mode(WIFI_STA);
+  delay(500);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(500);
-  WiFi.mode(WIFI_STA);
-  WiFi.config(Client_IP, Client_gateway, Client_subnet, Client_primaryDNS, Client_secondaryDNS);
-  Serial.print("Verbindung zu WLAN: ");
-  Serial.println(Client_ssid);
-  WiFi.begin(Client_ssid, Client_password);
-
-  while (WiFi.status() != WL_CONNECTED && Verbindungsversuche--) {
-    delay(1000);
-    Serial.print(".");
+  delay(1000);
+  Serial.println("\nVerbinde mit WLAN ...");
+  if (!verbindungWLAN()) {
+    Serial.println("Kein WLAN erreichbar, starte AP.");
+    starteAP();
+    Serial.println("AP gestartet.");
   }
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nVerbunden");
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
+  if (bme.begin(0x76)) {
+    Serial.println("BME280 gefunden.");
+    bmeAvailable = true;
   } else {
-    Serial.println("\nKeine Verbindung zum WLAN, eröffne AP");
-    WiFi.softAP(AP_ssid, AP_password);
-    Serial.print("Konfiguriere AP ... ");
-    Serial.println(WiFi.softAPConfig(AP_IP, AP_gateway, AP_subnet));
-    WiFi.softAPsetHostname(Hostname);
-    Serial.print("Starte AP");
-    Serial.print("AP SSID: ");
-    Serial.println(WiFi.softAPSSID());
-    Serial.print("AP IP: ");
-    Serial.println(WiFi.softAPIP());
-    Serial.print("AP Hostname: ");
-    Serial.println(WiFi.softAPgetHostname());
-    Serial.print("AP Mac: ");
-    Serial.println(WiFi.softAPmacAddress());
-    Serial.print("AP Subnet: ");
-    Serial.println(WiFi.softAPSubnetCIDR());
+    Serial.println("Kein BME280 gefunden! Nutze Standard-Werte.");
+    bmeAvailable = false;
   }
-
-  bme.begin(0x76);
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     String htmlResponse = index_html;
     htmlResponse.replace("%DatumZeit%", String(DatumZeit));
@@ -569,4 +701,5 @@ void setup() {
 }
 
 void loop() {
+  verbindungsversuch();
 }
